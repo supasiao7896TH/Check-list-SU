@@ -6111,17 +6111,17 @@ const App = {
             if (progress >= 1) return; // If task is done, skip notifications
 
             if (!this.notifiedTaskIds.includes(task.id) && minutesToStart > 0 && minutesToStart <= NOTIFICATION_LEAD_TIME_MINUTES) {
-                const message = `Reminder: The task '${task.description}' will start in ${NOTIFICATION_LEAD_TIME_MINUTES} minutes.`;
+                const message = `แจ้งเตือน: งาน "${task.description}" จะเริ่มในอีก ${NOTIFICATION_LEAD_TIME_MINUTES} นาที`;
                 this.showNotification(message, 'alert');
                 this.notifiedTaskIds.push(task.id);
             }
 
             if (minutesOverdue >= 15 && notificationState < 2) {
-                const message = `Final Warning: The task '${task.description}' is more than 15 minutes overdue.`;
+                const message = `คำเตือนสุดท้าย: งาน "${task.description}" เกินกำหนดเกิน 15 นาทีแล้ว`;
                 this.showNotification(message, 'error');
                 this.overdueNotificationState[task.id] = 2;
             } else if (minutesOverdue >= 5 && notificationState < 1) {
-                const message = `Task Overdue: The task '${task.description}' is now 5 minutes late.`;
+                const message = `งานล่าช้า: "${task.description}" เกินเวลา 5 นาทีแล้ว`;
                 this.showNotification(message, 'overdue');
                 this.overdueNotificationState[task.id] = 1;
             }
@@ -6820,14 +6820,18 @@ const App = {
         if (this.settings.soundEnabled && 'speechSynthesis' in window && ['alert', 'overdue', 'error'].includes(type)) {
             try {
                 window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(message); // Use English message for speech
-                
-                const englishVoice = this.speechVoices.find(voice => voice.lang.startsWith('en-') && (voice.name.includes('Female') || voice.name.includes('Google US English')));
-                utterance.voice = englishVoice || this.speechVoices.find(voice => voice.lang.startsWith('en-'));
-                utterance.lang = 'en-US';
-                
-                utterance.rate = 0.9; 
-                utterance.pitch = 1.0; 
+
+                const thaiVoice = this.speechVoices.find(voice => voice.lang.startsWith('th'));
+                const fallbackVoice = this.speechVoices.find(
+                    voice => voice.lang.startsWith('en-') && (voice.name.includes('Female') || voice.name.includes('Google US English'))
+                ) || this.speechVoices.find(voice => voice.lang.startsWith('en-'));
+
+                const useThaiVoice = !!thaiVoice;
+                const utterance = new SpeechSynthesisUtterance(useThaiVoice ? displayMessage : message);
+                utterance.voice = useThaiVoice ? thaiVoice : (fallbackVoice || null);
+                utterance.lang = useThaiVoice ? 'th-TH' : 'en-US';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
 
                 window.speechSynthesis.speak(utterance);
             } catch (error) {
