@@ -1746,6 +1746,10 @@ const IDLE_SCROLL_DELAY_MS = 20000; // 20 seconds for idle scroll
 const SEARCH_DEBOUNCE_MS = 300; // Wait for typing pause before re-rendering search
 const GEMINI_MAX_CALLS_PER_MINUTE = 10; // Client-side rate limit for AI calls
 const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute window for rate limiter
+const NOTIFICATION_DISPLAY_MS = 3500; // How long a toast stays before fading out
+const NOTIFICATION_FADE_MS = 400;     // Fade-out duration before removal
+const NOTIFICATION_MAX_AGE_MS = 8000; // Hard sweep: any toast older than this is force-removed
+const APP_BUILD = '2026-06-04.2';     // Visible build tag to confirm running version
 const CSS_CLASSES = {
     hidden: 'hidden',
 };
@@ -1962,6 +1966,19 @@ const App = {
         this.startTimers();
         this.setActiveTab(this.activeTab);
         this.resetIdleTimer(IDLE_SCROLL_DELAY_MS); // Start the idle timer on load
+        this.showBuildTag();
+    },
+
+    /** Small build tag so the running version can be confirmed at a glance. */
+    showBuildTag() {
+        console.log(`Check list SU — build ${APP_BUILD}`);
+        if (document.getElementById('buildTag')) return;
+        const tag = document.createElement('div');
+        tag.id = 'buildTag';
+        tag.textContent = `build ${APP_BUILD}`;
+        tag.style.cssText = 'position:fixed;left:8px;bottom:6px;z-index:90;font-size:10px;' +
+            'color:rgba(100,116,139,.6);font-family:monospace;pointer-events:none;user-select:none;';
+        document.body.appendChild(tag);
     },
 
     /**
@@ -2455,6 +2472,7 @@ const App = {
         this.updateClock();
         setInterval(() => this.updateClock(), 1000);
         setInterval(() => this.checkTaskNotifications(), 60000);
+        setInterval(() => this.sweepStaleNotifications(), 1000); // toast safety net
     },
 
     updateClock() {
@@ -3304,25 +3322,38 @@ const App = {
             }
         }
 
+        notification.dataset.createdAt = String(Date.now());
         document.body.appendChild(notification);
-        
+
         requestAnimationFrame(() => {
             notification.classList.add('show');
         });
 
+        // Pure timer-based removal — does NOT depend on the transitionend
+        // event (which can silently never fire, e.g. under
+        // prefers-reduced-motion), so a toast can never get stuck.
         setTimeout(() => {
             notification.classList.remove('show');
-            const removeNotification = () => {
+            setTimeout(() => {
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);
                 }
-            };
-            // Remove on transition end, with a fallback timeout in case
-            // transitionend never fires (e.g. prefers-reduced-motion makes
-            // the transition effectively instant → no event in some browsers).
-            notification.addEventListener('transitionend', removeNotification, { once: true });
-            setTimeout(removeNotification, 500);
-        }, 5000);
+            }, NOTIFICATION_FADE_MS);
+        }, NOTIFICATION_DISPLAY_MS);
+    },
+
+    /**
+     * Safety net: force-remove any toast that has lingered far longer than
+     * its intended lifetime, regardless of how it was created.
+     */
+    sweepStaleNotifications() {
+        const now = Date.now();
+        document.querySelectorAll('.notification').forEach(el => {
+            const created = Number(el.dataset.createdAt || 0);
+            if (created && now - created > NOTIFICATION_MAX_AGE_MS && el.parentNode) {
+                el.parentNode.removeChild(el);
+            }
+        });
     },
 
     // ===== DASHBOARD FUNCTIONS =====
