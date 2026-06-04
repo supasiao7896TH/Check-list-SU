@@ -3312,11 +3312,16 @@ const App = {
 
         setTimeout(() => {
             notification.classList.remove('show');
-            notification.addEventListener('transitionend', () => {
+            const removeNotification = () => {
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);
                 }
-            }, { once: true });
+            };
+            // Remove on transition end, with a fallback timeout in case
+            // transitionend never fires (e.g. prefers-reduced-motion makes
+            // the transition effectively instant → no event in some browsers).
+            notification.addEventListener('transitionend', removeNotification, { once: true });
+            setTimeout(removeNotification, 500);
         }, 5000);
     },
 
