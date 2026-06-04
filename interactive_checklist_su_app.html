@@ -1826,6 +1826,99 @@ const INITIAL_TASKS_JSON = `
 `;
 
 /**
+ * STORAGE_ENGINE — Promise-based IndexedDB key/value wrapper.
+ * Ref: SKILL references/js-quality.md → STORAGE_ENGINE
+ * Records are stored as { k: <key>, v: <value> } in a single object store.
+ */
+const STORAGE_ENGINE = (() => {
+    'use strict';
+    const DB_NAME = 'interactive_SU_DB';
+    const DB_VERSION = 1;
+    const STORE = 'appstore';
+    let _db = null;
+
+    function _open() {
+        if (_db) return Promise.resolve(_db);
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE)) {
+                    db.createObjectStore(STORE, { keyPath: 'k' });
+                }
+            };
+            req.onsuccess = () => { _db = req.result; resolve(_db); };
+            req.onerror = () => reject(req.error);
+            req.onblocked = () => console.warn('IndexedDB upgrade blocked');
+        });
+    }
+
+    function _tx(mode, fn) {
+        return _open().then(db => new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE, mode);
+            const store = tx.objectStore(STORE);
+            let req;
+            try { req = fn(store); } catch (err) { reject(err); return; }
+            tx.oncomplete = () => resolve(req ? req.result : undefined);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error);
+        }));
+    }
+
+    return {
+        open: _open,
+        async get(key) {
+            const rec = await _tx('readonly', s => s.get(key));
+            return rec ? rec.v : undefined;
+        },
+        put(key, value) { return _tx('readwrite', s => s.put({ k: key, v: value })); },
+        delete(key) { return _tx('readwrite', s => s.delete(key)); },
+    };
+})();
+
+/**
+ * CRYPTO_VAULT — encrypts the Gemini API key with AES-GCM 256.
+ * Ref: SKILL references/js-quality.md → AES-GCM API Key Vault
+ * Uses a NON-EXTRACTABLE CryptoKey stored in IndexedDB, so the raw key
+ * bytes can never be read back out — only used to encrypt/decrypt in-origin.
+ * No passphrase required → no change to the existing UX.
+ */
+const CRYPTO_VAULT = (() => {
+    'use strict';
+    const ALGO = 'AES-GCM';
+    const KEY_RECORD = 'cryptoKey';
+    const SECRET_RECORD = 'apiKeySecret';
+
+    async function _getKey() {
+        let key = await STORAGE_ENGINE.get(KEY_RECORD);
+        if (!key) {
+            key = await crypto.subtle.generateKey({ name: ALGO, length: 256 }, false, ['encrypt', 'decrypt']);
+            await STORAGE_ENGINE.put(KEY_RECORD, key);
+        }
+        return key;
+    }
+
+    return {
+        async setApiKey(plaintext) {
+            const key = await _getKey();
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const data = await crypto.subtle.encrypt({ name: ALGO, iv }, key, new TextEncoder().encode(plaintext));
+            await STORAGE_ENGINE.put(SECRET_RECORD, { iv, data });
+        },
+        async getApiKey() {
+            const rec = await STORAGE_ENGINE.get(SECRET_RECORD);
+            if (!rec) return null;
+            const key = await _getKey();
+            const decrypted = await crypto.subtle.decrypt({ name: ALGO, iv: rec.iv }, key, rec.data);
+            return new TextDecoder().decode(decrypted);
+        },
+        async clearApiKey() {
+            await STORAGE_ENGINE.delete(SECRET_RECORD);
+        },
+    };
+})();
+
+/**
  * Main Application Object
  */
 const App = {
@@ -1852,17 +1945,54 @@ const App = {
 
 
     // ===== INITIALIZATION =====
-    init() {
+    async init() {
         this.cacheDomElements();
-        this.loadSettings();
-        this.loadApiKey();
+        try {
+            await STORAGE_ENGINE.open();
+            await this.migrateFromLocalStorage();
+        } catch (error) {
+            console.error("IndexedDB unavailable, running with defaults:", error);
+        }
+        await this.loadSettings();
+        await this.loadApiKey();
         this.loadVoices();
         this.bindEvents();
-        this.loadTasks();
+        await this.loadTasks();
         this.render();
         this.startTimers();
-        this.setActiveTab(this.activeTab); 
+        this.setActiveTab(this.activeTab);
         this.resetIdleTimer(IDLE_SCROLL_DELAY_MS); // Start the idle timer on load
+    },
+
+    /**
+     * One-time migration: copy data from the old localStorage keys into
+     * IndexedDB. Task & settings backups are LEFT in localStorage as a
+     * safety net; the plaintext API key is moved into the encrypted vault
+     * and then removed from localStorage.
+     */
+    async migrateFromLocalStorage() {
+        const alreadyMigrated = await STORAGE_ENGINE.get('_migrated');
+        if (alreadyMigrated) return;
+
+        try {
+            const oldTasks = localStorage.getItem(STORAGE_KEY);
+            if (oldTasks) await STORAGE_ENGINE.put('tasks', JSON.parse(oldTasks));
+        } catch (e) { console.error("Task migration failed:", e); }
+
+        try {
+            const oldSettings = localStorage.getItem(SETTINGS_KEY);
+            if (oldSettings) await STORAGE_ENGINE.put('settings', JSON.parse(oldSettings));
+        } catch (e) { console.error("Settings migration failed:", e); }
+
+        try {
+            const oldKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+            if (oldKey) {
+                await CRYPTO_VAULT.setApiKey(oldKey);
+                localStorage.removeItem(API_KEY_STORAGE_KEY); // remove plaintext secret
+            }
+        } catch (e) { console.error("API key migration failed:", e); }
+
+        await STORAGE_ENGINE.put('_migrated', true);
     },
 
     cacheDomElements() {
@@ -2056,10 +2186,11 @@ const App = {
         );
     },
 
-    loadTasks() {
+    async loadTasks() {
         try {
-            const tasksJSON = localStorage.getItem(STORAGE_KEY);
-            let loadedTasks = tasksJSON ? JSON.parse(tasksJSON) : this.getDefaultTasks();
+            const stored = await STORAGE_ENGINE.get('tasks');
+            const hasStored = Array.isArray(stored);
+            let loadedTasks = hasStored ? stored : this.getDefaultTasks();
             // NEW: Added properties for actual times
             this.tasks = loadedTasks.map(task => ({
                 ...task,
@@ -2077,6 +2208,7 @@ const App = {
             }));
             this.sortTasks();
             this.resetAllNotifications();
+            if (!hasStored) await this.saveTasks(); // persist freshly-loaded defaults
         } catch (error) {
             console.error("Error loading tasks:", error);
             this.showNotification('Error loading data.', 'error');
@@ -2084,12 +2216,12 @@ const App = {
         }
     },
 
-    saveTasks() {
+    async saveTasks() {
         this.sortTasks();
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.tasks));
+            await STORAGE_ENGINE.put('tasks', this.tasks);
         } catch (error) {
-            console.error("Failed to save tasks to localStorage:", error);
+            console.error("Failed to save tasks to IndexedDB:", error);
             this.showNotification('Error: Could not save data. Storage might be full.', 'error');
         }
         this.checkCompletionStatus();
@@ -2541,11 +2673,11 @@ const App = {
         }, delay);
     },
 
-    handleApiKeySubmit() {
+    async handleApiKeySubmit() {
         const key = this.dom.apiKeyInput.value.trim();
         if (key) {
             this.apiKey = key;
-            this.saveApiKey();
+            await this.saveApiKey();
             this.closeApiKeyModal();
             this.showNotification('API Key saved. Please try the AI feature again.', 'success');
         } else {
@@ -2803,11 +2935,12 @@ const App = {
 
     handleResetData(e) {
         const confirmationText = 'รีเซ็ต';
-        this.openConfirmModal('รีเซ็ตข้อมูลทั้งหมด?', `การกระทำนี้จะลบข้อมูลปัจจุบันทั้งหมดและโหลดรายการงานเริ่มต้นเข้ามาใหม่ <strong>ไม่สามารถย้อนกลับได้</strong><br>โปรดพิมพ์ "${confirmationText}" เพื่อยืนยัน:`, () => {
+        this.openConfirmModal('รีเซ็ตข้อมูลทั้งหมด?', `การกระทำนี้จะลบข้อมูลปัจจุบันทั้งหมดและโหลดรายการงานเริ่มต้นเข้ามาใหม่ <strong>ไม่สามารถย้อนกลับได้</strong><br>โปรดพิมพ์ "${confirmationText}" เพื่อยืนยัน:`, async () => {
             const input = document.getElementById('confirmInput');
             if (input && input.value === confirmationText) {
+                await STORAGE_ENGINE.delete('tasks');
                 localStorage.removeItem(STORAGE_KEY);
-                this.loadTasks();
+                await this.loadTasks();
                 this.render();
                 if (this.activeModal === 'dashboard') this.renderDashboard();
                 this.showNotification('Data has been reset to default.', 'info');
@@ -3051,11 +3184,11 @@ const App = {
         }
     },
 
-    loadSettings() {
+    async loadSettings() {
         try {
-            const settingsJSON = localStorage.getItem(SETTINGS_KEY);
-            if (settingsJSON) {
-                this.settings = { ...this.settings, ...JSON.parse(settingsJSON) };
+            const stored = await STORAGE_ENGINE.get('settings');
+            if (stored) {
+                this.settings = { ...this.settings, ...stored };
             }
         } catch (error) {
             console.error("Error loading settings, using defaults:", error);
@@ -3063,24 +3196,32 @@ const App = {
         this.updateSoundIcon();
     },
 
-    saveSettings() {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
+    async saveSettings() {
+        try {
+            await STORAGE_ENGINE.put('settings', this.settings);
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+        }
     },
 
-    loadApiKey() {
+    async loadApiKey() {
         try {
-            this.apiKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+            this.apiKey = await CRYPTO_VAULT.getApiKey();
         } catch (error) {
             console.error("Error loading API key:", error);
             this.apiKey = null;
         }
     },
 
-    saveApiKey() {
-        if (this.apiKey) {
-            localStorage.setItem(API_KEY_STORAGE_KEY, this.apiKey);
-        } else {
-            localStorage.removeItem(API_KEY_STORAGE_KEY);
+    async saveApiKey() {
+        try {
+            if (this.apiKey) {
+                await CRYPTO_VAULT.setApiKey(this.apiKey);
+            } else {
+                await CRYPTO_VAULT.clearApiKey();
+            }
+        } catch (error) {
+            console.error("Failed to save API key:", error);
         }
     },
     
@@ -3482,7 +3623,9 @@ const App = {
 };
 
 // --- APP INITIALIZATION ---
-document.addEventListener('DOMContentLoaded', () => App.init());
+document.addEventListener('DOMContentLoaded', () => {
+    App.init().catch(err => console.error("App initialization failed:", err));
+});
 
 </script>
 
