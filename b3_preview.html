@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B3 Preview — Check list SU (Supasit.A v4.0)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Noto+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ DESIGN TOKENS (SKILL DS-6 role-based) ============ */
+:root {
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-full: 9999px;
+  --ease-entrance: cubic-bezier(.16,1,.3,1);
+  --font-thai: 'Noto Sans Thai', sans-serif;
+  --font-display: 'Fraunces', serif;
+  /* semantic */
+  --success: #34d399; --warning: #fbbf24; --danger: #f87171; --info: #60a5fa;
+  --brand: #a78bfa; --brand-deep: #7c3aed;
+}
+/* DARK (default) */
+[data-theme="dark"] {
+  --bg-page: #0b0c10; --bg-card: #16171d; --bg-raised: #1e2027; --bg-overlay: #2a2d36;
+  --text-primary: #f3f4f6; --text-secondary: #a9adbb; --text-tertiary: #6b7280;
+  --border-subtle: rgba(255,255,255,.05); --border-default: rgba(255,255,255,.09); --border-strong: rgba(255,255,255,.16);
+  --glass-bg: rgba(22,23,29,.70); --glass-border: rgba(255,255,255,.08);
+  --noise-op: .035;
+  --mesh: radial-gradient(900px 500px at 12% -10%, rgba(124,58,237,.18), transparent 60%),
+          radial-gradient(800px 480px at 110% 10%, rgba(52,211,153,.10), transparent 55%);
+}
+/* LIGHT */
+[data-theme="light"] {
+  --bg-page: #f4f5f8; --bg-card: #ffffff; --bg-raised: #f1f2f6; --bg-overlay: #e7e9f0;
+  --text-primary: #14151a; --text-secondary: #54596b; --text-tertiary: #9aa0b2;
+  --border-subtle: rgba(0,0,0,.05); --border-default: rgba(0,0,0,.09); --border-strong: rgba(0,0,0,.14);
+  --glass-bg: rgba(255,255,255,.72); --glass-border: rgba(0,0,0,.06);
+  --noise-op: .02;
+  --mesh: radial-gradient(900px 500px at 12% -10%, rgba(124,58,237,.10), transparent 60%),
+          radial-gradient(800px 480px at 110% 10%, rgba(52,211,153,.10), transparent 55%);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: var(--font-thai);
+  background: var(--bg-page);
+  background-image: var(--mesh);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  line-height: 1.75;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  word-break: break-word; overflow-wrap: anywhere;
+  transition: background-color .4s var(--ease-entrance), color .4s var(--ease-entrance);
+}
+.wrap { max-width: 980px; margin: 0 auto; padding: 24px; padding-bottom: 120px; }
+
+/* ============ GLASS (DS-12) ============ */
+.glass {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-xl);
+  box-shadow: 0 12px 40px rgba(0,0,0,.15), 0 4px 8px rgba(0,0,0,.08);
+}
+.glass::before {
+  content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  opacity: var(--noise-op);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============ HEADER ============ */
+.site-header {
+  position: sticky; top: 16px; z-index: 50;
+  display:flex; align-items:center; justify-content:space-between;
+  gap: 16px; padding: 14px 20px; margin-bottom: 32px;
+}
+.brand { display:flex; align-items:center; gap:12px; }
+.brand .logo { font-family: var(--font-display); font-size: 22px; font-weight: 500; letter-spacing: -.02em; }
+.brand .sub { font-size: 11px; letter-spacing:.07em; text-transform:uppercase; color: var(--text-tertiary); }
+.nav { display:flex; gap:6px; }
+.nav a {
+  font-size: 13px; padding: 8px 16px; border-radius: var(--r-full); color: var(--text-secondary);
+  text-decoration:none; min-height: 36px; display:inline-flex; align-items:center; transition: all .12s;
+}
+.nav a.active { background: var(--bg-overlay); color: var(--text-primary); }
+.nav a:hover { color: var(--text-primary); }
+.h-actions { display:flex; align-items:center; gap:12px; }
+.theme-toggle {
+  width:44px; height:44px; border-radius:var(--r-full); border:1px solid var(--border-default);
+  background: var(--bg-raised); color: var(--text-primary); cursor:pointer; font-size:18px;
+  display:flex; align-items:center; justify-content:center; transition: all .12s;
+}
+.theme-toggle:active { transform: scale(.95); }
+.status-dot { width:9px; height:9px; border-radius:var(--r-full); background: var(--success);
+  box-shadow: 0 0 0 0 rgba(52,211,153,.5); animation: glow 2.4s ease-in-out infinite; }
+@keyframes glow { 0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.45)} 50%{box-shadow:0 0 0 6px rgba(52,211,153,0)} }
+
+/* ============ HERO / METRIC STRIP (Bento) ============ */
+.hero { display:grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap:16px; margin-bottom:32px; }
+.metric { padding: 20px; }
+.eyebrow { font-size:10px; font-weight:500; letter-spacing:.09em; text-transform:uppercase; color: var(--text-tertiary); }
+.metric .value { font-family: var(--font-display); font-size: clamp(28px,4vw,40px); font-weight:400; letter-spacing:-.03em; line-height:1.1; margin-top:6px; }
+.metric.lead .value { color: var(--brand); }
+.metric .cap { font-size:12px; color: var(--text-secondary); margin-top:2px; }
+.mini-bar { height:6px; border-radius:var(--r-full); background: var(--bg-overlay); overflow:hidden; margin-top:14px; }
+.mini-bar > i { display:block; height:100%; border-radius:var(--r-full); background: linear-gradient(90deg,var(--brand-deep),var(--brand)); }
+.dot-s{color:var(--text-tertiary)} .v-done{color:var(--success)} .v-prog{color:var(--info)} .v-pend{color:var(--warning)}
+
+/* ============ TASK CARD ============ */
+.section-label { display:flex; align-items:center; gap:10px; margin: 0 4px 14px; }
+.section-label h2 { font-size: clamp(16px,2vw,17px); font-weight:500; letter-spacing:-.015em; }
+.section-label .count { font-size:12px; color:var(--text-tertiary); }
+.task { padding: 0; margin-bottom: 16px; overflow:hidden; animation: fadeUp .5s var(--ease-entrance) both; }
+.task .top { display:flex; gap:20px; padding:20px; align-items:flex-start; }
+.time-col { width:92px; flex-shrink:0; text-align:left; }
+.time-col .date { font-size:12px; color: var(--info); }
+.time-col .time { font-family: var(--font-display); font-size:26px; font-weight:500; letter-spacing:-.02em; }
+.time-col .actual { font-size:11px; color: var(--success); margin-top:6px; padding-top:6px; border-top:1px solid var(--border-subtle); }
+.task .body { flex:1; min-width:0; border-left:1px solid var(--border-default); padding-left:20px; }
+.task .desc { font-size:15px; font-weight:500; }
+.prog-row { display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary); margin:12px 0 6px; }
+.prog { height:6px; border-radius:var(--r-full); background: var(--bg-overlay); overflow:hidden; }
+.prog > i { display:block; height:100%; border-radius:var(--r-full); transition: width .4s var(--ease-entrance); }
+.prog.is-prog > i { background: var(--info); }
+.prog.is-done > i { background: var(--success); }
+.badge { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:500; padding:4px 10px; border-radius:var(--r-full); }
+.badge.pend { color:var(--warning); background:rgba(251,191,36,.10); border:1px solid rgba(251,191,36,.22); }
+.badge.prog { color:var(--info); background:rgba(96,165,250,.10); border:1px solid rgba(96,165,250,.22); }
+.badge.done { color:var(--success); background:rgba(52,211,153,.10); border:1px solid rgba(52,211,153,.22); }
+.subs { border-top:1px solid var(--border-subtle); padding:8px 20px 16px; }
+.sub { display:flex; gap:12px; align-items:flex-start; padding:8px; border-radius:var(--r-md); transition: background .12s; }
+.sub:hover { background: var(--bg-raised); }
+.sub.indent { padding-left: 28px; }
+.chk { appearance:none; width:20px; height:20px; flex-shrink:0; margin-top:3px; border-radius:var(--r-sm);
+  border:1.5px solid var(--border-strong); background:var(--bg-raised); cursor:pointer; position:relative; transition:all .12s; }
+.chk:checked { background: var(--brand-deep); border-color: var(--brand-deep); }
+.chk:checked::after { content:'✓'; position:absolute; inset:0; color:#fff; font-size:13px; display:flex; align-items:center; justify-content:center; }
+.sub label { font-size:14px; color: var(--text-secondary); cursor:pointer; }
+.sub input:checked ~ label { color: var(--text-tertiary); text-decoration: line-through; }
+.ring-now { box-shadow: 0 0 0 1.5px var(--brand), 0 12px 40px rgba(124,58,237,.20); }
+
+.note { margin:14px 0 4px; padding-top:14px; border-top:1px dashed var(--border-default); }
+.pic { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--warning);
+  background:rgba(251,191,36,.10); border:1px solid rgba(251,191,36,.22); padding:3px 10px; border-radius:var(--r-full); }
+
+/* ============ GLASS BADGE (brand, DS) ============ */
+.app-badge {
+  position: fixed; bottom: 24px; right: 24px; z-index: 100;
+  display:flex; align-items:center; gap:10px; padding:10px 16px;
+  animation: float 4s ease-in-out infinite;
+}
+.app-badge .name { font-family: var(--font-display); font-size:14px; font-weight:500; }
+.app-badge .ver { font-size:11px; color: var(--text-tertiary); }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes fadeUp { from{opacity:0; transform:translateY(16px)} }
+
+@media (max-width: 720px){ .hero{grid-template-columns:1fr 1fr} .time-col{width:auto} }
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.001ms!important; transition-duration:.001ms!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="site-header glass">
+    <div class="brand">
+      <span class="status-dot"></span>
+      <div>
+        <div class="logo">Supasit.A</div>
+        <div class="sub">Start-Up Check List</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="#" class="active">รายการงาน</a>
+      <a href="#">แดชบอร์ด</a>
+    </nav>
+    <div class="h-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" id="tt" title="สลับธีม">🌙</button>
+    </div>
+  </header>
+
+  <!-- METRIC STRIP -->
+  <section class="hero">
+    <div class="metric lead glass">
+      <div class="eyebrow">ความคืบหน้ารวม</div>
+      <div class="value">42<span style="font-size:.5em">%</span></div>
+      <div class="cap">12 จาก 28 งาน</div>
+      <div class="mini-bar"><i style="width:42%"></i></div>
+    </div>
+    <div class="metric glass"><div class="eyebrow">รอเริ่ม</div><div class="value v-pend">9</div></div>
+    <div class="metric glass"><div class="eyebrow">กำลังทำ</div><div class="value v-prog">7</div></div>
+    <div class="metric glass"><div class="eyebrow">เสร็จแล้ว</div><div class="value v-done">12</div></div>
+  </section>
+
+  <!-- TASK LIST -->
+  <div class="section-label">
+    <h2>ลำดับงาน Start-Up</h2><span class="count">— วันนี้ 02 มิ.ย.</span>
+  </div>
+
+  <!-- Card: in-progress + highlighted (current) -->
+  <article class="task glass ring-now">
+    <div class="top">
+      <div class="time-col">
+        <div class="date">02 มิ.ย.</div>
+        <div class="time">08:00</div>
+        <div class="actual">เริ่ม: 08:05</div>
+      </div>
+      <div class="body">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <p class="desc">■ PREPARATION OF START UP</p>
+          <span class="badge prog">● กำลังทำ</span>
+        </div>
+        <div class="prog-row"><span>ความคืบหน้า</span><span>2 / 5</span></div>
+        <div class="prog is-prog"><i style="width:40%"></i></div>
+      </div>
+    </div>
+    <div class="subs">
+      <div class="sub"><input class="chk" type="checkbox" id="a1" checked><label for="a1">1. Waste water, residue discharge SCHEDULE</label></div>
+      <div class="sub indent"><input class="chk" type="checkbox" id="a2" checked><label for="a2">Secure START UP personnel arrangements (man power)</label></div>
+      <div class="sub"><input class="chk" type="checkbox" id="a3"><label for="a3">2. Inspect lighting system already</label></div>
+      <div class="sub"><input class="chk" type="checkbox" id="a4"><label for="a4">★ Confirm completion of inter lock and sequence test</label></div>
+      <div class="note">
+        <div class="pic">👤 ผู้รับผิดชอบ: Somchai</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-top:8px">บันทึก: รอผล calibrate ESD SW จากทีม EI ก่อนเริ่มขั้นถัดไป</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- Card: done -->
+  <article class="task glass" style="animation-delay:.06s">
+    <div class="top">
+      <div class="time-col">
+        <div class="date">02 มิ.ย.</div>
+        <div class="time">08:30</div>
+        <div class="actual">08:32 – 09:10</div>
+      </div>
+      <div class="body">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <p class="desc">■ Preparation and receive utilities</p>
+          <span class="badge done">✓ เสร็จแล้ว</span>
+        </div>
+        <div class="prog-row"><span>ความคืบหน้า</span><span>2 / 2</span></div>
+        <div class="prog is-done"><i style="width:100%"></i></div>
+      </div>
+    </div>
+    <div class="subs">
+      <div class="sub"><input class="chk" type="checkbox" id="b1" checked><label for="b1">IA, SA, 9N, 7N, H₂, FG, DIW, CCW &amp; RCCW</label></div>
+      <div class="sub"><input class="chk" type="checkbox" id="b2" checked><label for="b2">FLW, 3S, 5S, 10S, 25S, 3%Na, 50%Na</label></div>
+    </div>
+  </article>
+
+  <!-- Card: pending, no subtask (B-fix preserved) -->
+  <article class="task glass" style="animation-delay:.12s">
+    <div class="top">
+      <div class="time-col">
+        <div class="date">03 มิ.ย.</div>
+        <div class="time">09:30</div>
+      </div>
+      <div class="body">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <p class="desc">Start SEQ LC-2301-2303 OPEN/CLOSE</p>
+          <span class="badge pend">○ รอเริ่ม</span>
+        </div>
+      </div>
+    </div>
+    <div class="subs">
+      <div class="sub"><input class="chk" type="checkbox" id="c1"><label for="c1">เสร็จสิ้นงานนี้</label></div>
+    </div>
+  </article>
+
+</div>
+
+<!-- GLASS BADGE -->
+<div class="app-badge glass">
+  <span class="status-dot"></span>
+  <span class="name">Supasit.A</span>
+  <span class="ver">v4.0</span>
+</div>
+
+<script>
+function toggleTheme(){
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('tt').textContent = next === 'dark' ? '🌙' : '☀️';
+}
+</script>
+</body>
+</html>
