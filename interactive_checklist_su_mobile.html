@@ -1,8 +1,16 @@
 <html lang="th"><head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://i.postimg.cc; connect-src 'self' https://generativelanguage.googleapis.com; base-uri 'self'; form-action 'self'">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Check list SU — Mobile</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Check list SU">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2102,6 +2110,7 @@ const App = {
         this.setActiveTab(this.activeTab);
         this.resetIdleTimer(IDLE_SCROLL_DELAY_MS); // Start the idle timer on load
         this.showBuildTag();
+        this.sweepStaleNotifications(); // clear any stray/baked-in toast immediately
     },
 
     /** Build the mobile-only chrome: header progress, bottom nav, FAB, tools sheet. */
@@ -3316,6 +3325,9 @@ const App = {
             .filter(s => s.textContent.trimStart().startsWith('*, ::before'));
         injectedStyles.forEach(s => s.remove());
 
+        // Remove any visible toasts so they are not baked into the export.
+        document.querySelectorAll('.notification').forEach(el => el.remove());
+
         const taskList = this.dom.taskListEl;
         const savedTaskListHTML = taskList.innerHTML;
         taskList.innerHTML = '';
@@ -3560,10 +3572,11 @@ const App = {
     sweepStaleNotifications() {
         const now = Date.now();
         document.querySelectorAll('.notification').forEach(el => {
-            const created = Number(el.dataset.createdAt || 0);
-            if (created && now - created > NOTIFICATION_MAX_AGE_MS && el.parentNode) {
-                el.parentNode.removeChild(el);
-            }
+            const created = Number(el.dataset.createdAt);
+            // Missing createdAt => a stray/baked-in toast we didn't create (e.g.
+            // captured by an HTML export) => remove it. Otherwise remove if stale.
+            const stale = !created || (now - created > NOTIFICATION_MAX_AGE_MS);
+            if (stale && el.parentNode) el.parentNode.removeChild(el);
         });
     },
 
@@ -3878,4 +3891,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-<div class="notification bg-green-500/80 show" style="top: 20px;">บันทึกข้อมูลสำเร็จแล้ว</div></body></html>
+<script>
+  // Register service worker for PWA (installable + offline)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed:', err));
+    });
+  }
+</script>
+</body></html>

@@ -1967,6 +1967,7 @@ const App = {
         this.setActiveTab(this.activeTab);
         this.resetIdleTimer(IDLE_SCROLL_DELAY_MS); // Start the idle timer on load
         this.showBuildTag();
+        this.sweepStaleNotifications(); // clear any stray/baked-in toast immediately
     },
 
     /** Small build tag so the running version can be confirmed at a glance. */
@@ -3105,6 +3106,9 @@ const App = {
             .filter(s => s.textContent.trimStart().startsWith('*, ::before'));
         injectedStyles.forEach(s => s.remove());
 
+        // Remove any visible toasts so they are not baked into the export.
+        document.querySelectorAll('.notification').forEach(el => el.remove());
+
         const taskList = this.dom.taskListEl;
         const savedTaskListHTML = taskList.innerHTML;
         taskList.innerHTML = '';
@@ -3349,10 +3353,11 @@ const App = {
     sweepStaleNotifications() {
         const now = Date.now();
         document.querySelectorAll('.notification').forEach(el => {
-            const created = Number(el.dataset.createdAt || 0);
-            if (created && now - created > NOTIFICATION_MAX_AGE_MS && el.parentNode) {
-                el.parentNode.removeChild(el);
-            }
+            const created = Number(el.dataset.createdAt);
+            // Missing createdAt => a stray/baked-in toast we didn't create (e.g.
+            // captured by an HTML export) => remove it. Otherwise remove if stale.
+            const stale = !created || (now - created > NOTIFICATION_MAX_AGE_MS);
+            if (stale && el.parentNode) el.parentNode.removeChild(el);
         });
     },
 
@@ -3667,4 +3672,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-<div class="notification bg-green-500/80 show" style="top: 20px;">บันทึกข้อมูลสำเร็จแล้ว</div></body></html>
+</body></html>
