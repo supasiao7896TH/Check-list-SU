@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Check list SU</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Sarabun',sans-serif;min-height:100dvh;display:flex;align-items:center;justify-content:center;
+    background:#0f172a;color:#e2e8f0;padding:24px;
+    background-image:radial-gradient(800px 500px at 20% -10%,rgba(37,99,235,.25),transparent 60%)}
+  .card{max-width:380px;width:100%;text-align:center}
+  .logo{width:84px;height:84px;border-radius:24px;background:#2563eb;display:grid;place-items:center;margin:0 auto 18px;
+    box-shadow:0 12px 30px -8px rgba(37,99,235,.6)}
+  .logo svg{width:46px;height:46px;color:#fff}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+  p.sub{color:#94a3b8;font-size:14px;margin-top:4px;margin-bottom:28px}
+  a.btn{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff;text-align:left;
+    padding:16px 18px;border-radius:16px;margin-bottom:12px;font-size:15px;font-weight:600;
+    border:1px solid rgba(255,255,255,.08);transition:transform .12s}
+  a.btn:active{transform:scale(.98)}
+  a.mobile{background:#2563eb}
+  a.pc{background:rgba(255,255,255,.06)}
+  a.btn .ic{font-size:24px}
+  a.btn small{display:block;font-weight:400;font-size:12px;opacity:.8;margin-top:2px}
+  .hint{margin-top:18px;font-size:12px;color:#64748b;line-height:1.7}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    </div>
+    <h1>Check list SU</h1>
+    <p class="sub">PTA Unit — Start-Up Checklist</p>
+
+    <a class="btn mobile" href="./interactive_checklist_su_mobile.html">
+      <span class="ic">📱</span>
+      <span>เปิดเวอร์ชันมือถือ (PWA)<small>ติดตั้งเป็นแอปได้ · ใช้ออฟไลน์ได้</small></span>
+    </a>
+    <a class="btn pc" href="./interactive_checklist_su_app.html">
+      <span class="ic">💻</span>
+      <span>เปิดเวอร์ชัน PC<small>หน้าจอกว้าง · เครื่องมือครบ</small></span>
+    </a>
+
+    <p class="hint">📲 ติดตั้งเป็นแอป: เปิดเวอร์ชันมือถือ แล้วแตะเมนู ⋮ ของ Chrome → “ติดตั้งแอป” หรือ “เพิ่มลงในหน้าจอหลัก”</p>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
