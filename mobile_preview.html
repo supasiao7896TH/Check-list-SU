@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mobile Mockup — Check list SU</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2563eb; --blue-d:#1d4ed8;
+    --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0;
+    --slate-400:#94a3b8; --slate-500:#64748b; --slate-600:#475569; --slate-800:#1e293b;
+    --green:#16a34a; --amber:#f59e0b; --red:#dc2626;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Sarabun',sans-serif;background:#0f172a;color:var(--slate-800);
+    display:flex;justify-content:center;min-height:100vh}
+  /* phone frame so it reads as "mobile" on a PC; on a real phone it just fills the screen */
+  .phone{width:100%;max-width:412px;background:var(--slate-100);min-height:100dvh;
+    position:relative;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 0 0 10px #000, 0 0 60px rgba(0,0,0,.6)}
+  @media(min-width:460px){ .phone{border-radius:42px;margin:18px 0;min-height:880px;max-height:880px} }
+
+  /* ---- sticky compact header ---- */
+  header{position:sticky;top:0;z-index:20;color:#fff;
+    background:linear-gradient(135deg, rgba(13,20,40,.92), rgba(30,41,59,.92)),
+      url('https://i.postimg.cc/66v7rTdM/port-arthur-1584098-1280.jpg') center/cover;
+    padding:calc(var(--safe-top) + 14px) 18px 14px}
+  .h-row{display:flex;justify-content:space-between;align-items:flex-start}
+  .h-title{font-size:22px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+  .h-sub{font-size:11px;opacity:.8}
+  .clock{text-align:right}
+  .clock .t{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+  .clock .d{font-size:10px;opacity:.8}
+  .ovr{display:flex;align-items:center;gap:12px;margin-top:14px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+    border-radius:16px;padding:10px 14px;backdrop-filter:blur(8px)}
+  .ring{--p:42;width:46px;height:46px;border-radius:50%;flex-shrink:0;
+    background:conic-gradient(#34d399 calc(var(--p)*1%), rgba(255,255,255,.2) 0);
+    display:grid;place-items:center}
+  .ring::after{content:'42%';width:36px;height:36px;border-radius:50%;background:#16213a;
+    display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+  .ovr .meta{flex:1}
+  .ovr .meta b{font-size:13px;font-weight:600}
+  .ovr .meta p{font-size:11px;opacity:.85}
+  .pills{display:flex;gap:6px;margin-top:6px}
+  .pill{font-size:10px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.16)}
+
+  /* ---- search + filter ---- */
+  .sticky-tools{position:sticky;top:0;z-index:10;background:var(--slate-100);
+    padding:12px 14px 8px;box-shadow:0 4px 10px -8px rgba(0,0,0,.3)}
+  .search{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--slate-200);
+    border-radius:14px;padding:11px 14px}
+  .search input{border:0;outline:0;font-family:inherit;font-size:15px;width:100%;background:transparent}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex-shrink:0;font-size:13px;padding:8px 16px;border-radius:999px;border:1px solid var(--slate-200);
+    background:#fff;color:var(--slate-600);min-height:38px}
+  .chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+  /* ---- scroll area ---- */
+  .scroll{flex:1;overflow-y:auto;padding:6px 14px 120px}
+
+  /* ---- task accordion card ---- */
+  .task{background:#fff;border:1px solid var(--slate-200);border-radius:18px;margin-bottom:12px;overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .task.now{border-color:var(--amber);box-shadow:0 0 0 2px rgba(245,158,11,.25)}
+  .task.done{background:#f0fdf4}
+  .task-head{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer}
+  .time-chip{flex-shrink:0;text-align:center;min-width:58px}
+  .time-chip .d{font-size:10px;font-weight:600;color:var(--blue)}
+  .time-chip .t{font-size:19px;font-weight:700;letter-spacing:-.02em}
+  .task-main{flex:1;min-width:0}
+  .task-main .desc{font-size:14.5px;font-weight:600;line-height:1.35}
+  .meta-row{display:flex;align-items:center;gap:8px;margin-top:7px}
+  .bar{flex:1;height:6px;background:var(--slate-200);border-radius:999px;overflow:hidden}
+  .bar > i{display:block;height:100%;border-radius:999px;background:var(--blue)}
+  .bar.dn > i{background:var(--green)}
+  .frac{font-size:11px;color:var(--slate-500);font-variant-numeric:tabular-nums}
+  .stat{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+  .stat.p{color:var(--amber);background:#fef3c7}
+  .stat.i{color:var(--blue);background:#dbeafe}
+  .stat.d{color:var(--green);background:#dcfce7}
+  .chev{flex-shrink:0;color:var(--slate-400);transition:transform .25s}
+  .task.open .chev{transform:rotate(180deg)}
+  .subs{max-height:0;overflow:hidden;transition:max-height .3s ease}
+  .task.open .subs{max-height:700px}
+  .subs-in{border-top:1px solid var(--slate-100);padding:6px 14px 14px}
+  .sub{display:flex;gap:12px;align-items:flex-start;padding:11px 6px;min-height:46px}
+  .sub.indent{padding-left:24px}
+  .sub + .sub{border-top:1px solid var(--slate-50)}
+  .cbx{appearance:none;width:24px;height:24px;flex-shrink:0;border:2px solid var(--slate-400);
+    border-radius:7px;background:#fff;position:relative;transition:.15s}
+  .cbx:checked{background:var(--blue);border-color:var(--blue)}
+  .cbx:checked::after{content:'✓';position:absolute;inset:0;color:#fff;font-size:15px;display:grid;place-items:center}
+  .sub label{font-size:14px;color:var(--slate-600);line-height:1.45}
+  .sub .cbx:checked ~ label{color:var(--slate-400);text-decoration:line-through}
+  .note{margin-top:10px;padding-top:10px;border-top:1px dashed var(--slate-200)}
+  .pic{display:inline-flex;gap:5px;font-size:12px;color:#92400e;background:#fef3c7;padding:3px 10px;border-radius:999px}
+
+  /* ---- FAB ---- */
+  .fab{position:absolute;right:18px;bottom:calc(var(--safe-bottom) + 84px);z-index:25;
+    width:58px;height:58px;border-radius:20px;background:var(--blue);color:#fff;border:0;
+    font-size:30px;display:grid;place-items:center;box-shadow:0 10px 24px -6px rgba(37,99,235,.6)}
+
+  /* ---- bottom nav ---- */
+  .botnav{position:sticky;bottom:0;z-index:20;display:flex;background:#fff;border-top:1px solid var(--slate-200);
+    padding:8px 6px calc(var(--safe-bottom) + 8px)}
+  .nav-it{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--slate-500);padding:4px;min-height:48px}
+  .nav-it.on{color:var(--blue)}
+  .nav-it svg{width:24px;height:24px}
+
+  /* ---- bottom sheet demo ---- */
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:40;opacity:0;pointer-events:none;transition:.25s}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:#fff;border-radius:24px 24px 0 0;
+    padding:8px 18px calc(var(--safe-bottom) + 18px);transform:translateY(100%);transition:transform .3s var(--ease,cubic-bezier(.16,1,.3,1))}
+  .sheet.show{transform:translateY(0)}
+  .grab{width:42px;height:5px;border-radius:999px;background:var(--slate-200);margin:8px auto 14px}
+  .sheet h3{font-size:18px;font-weight:700;margin-bottom:14px}
+  .fld{margin-bottom:12px}
+  .fld span{font-size:12px;color:var(--slate-500);display:block;margin-bottom:4px}
+  .fld input{width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border:1px solid var(--slate-200);border-radius:12px;background:var(--slate-50)}
+  .sheet-actions{display:flex;gap:10px;margin-top:6px}
+  .btn{flex:1;padding:14px;border-radius:14px;border:0;font-family:inherit;font-size:15px;font-weight:600;min-height:50px}
+  .btn.ghost{background:var(--slate-100);color:var(--slate-600)}
+  .btn.primary{background:var(--blue);color:#fff}
+  .buildtag{position:absolute;left:8px;bottom:calc(var(--safe-bottom) + 70px);font-size:9px;color:var(--slate-400);font-family:monospace;z-index:30}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- HEADER -->
+  <header>
+    <div class="h-row">
+      <div>
+        <div class="h-title">Check list SU</div>
+        <div class="h-sub">PTA unit</div>
+      </div>
+      <div class="clock">
+        <div class="t" id="clk">14:32</div>
+        <div class="d">พฤ. 4 มิ.ย. 69</div>
+      </div>
+    </div>
+    <div class="ovr">
+      <div class="ring"></div>
+      <div class="meta">
+        <b>ความคืบหน้ารวม 42%</b>
+        <p>12 / 28 งาน</p>
+        <div class="pills"><span class="pill">รอ 9</span><span class="pill">ทำ 7</span><span class="pill">เสร็จ 12</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- STICKY SEARCH + FILTER -->
+  <div class="sticky-tools">
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="9" cy="9" r="6"/><path d="M19 19l-5-5"/></svg>
+      <input placeholder="ค้นหางาน...">
+    </div>
+    <div class="chips">
+      <button class="chip on">ทั้งหมด</button>
+      <button class="chip">รอทำ</button>
+      <button class="chip">กำลังทำ</button>
+      <button class="chip">เสร็จแล้ว</button>
+    </div>
+  </div>
+
+  <!-- TASK LIST -->
+  <div class="scroll">
+
+    <!-- current / in-progress (expanded) -->
+    <div class="task now open" onclick="tog(this,event)">
+      <div class="task-head">
+        <div class="time-chip"><div class="d">04 มิ.ย.</div><div class="t">08:00</div></div>
+        <div class="task-main">
+          <div class="desc">■ PREPARATION OF START UP</div>
+          <div class="meta-row">
+            <div class="bar"><i style="width:40%"></i></div>
+            <span class="frac">2/5</span>
+            <span class="stat i">กำลังทำ</span>
+          </div>
+        </div>
+        <svg class="chev" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7l5 5 5-5"/></svg>
+      </div>
+      <div class="subs"><div class="subs-in">
+        <div class="sub"><input class="cbx" type="checkbox" checked onclick="event.stopPropagation()"><label>1. Waste water, residue discharge SCHEDULE</label></div>
+        <div class="sub indent"><input class="cbx" type="checkbox" checked onclick="event.stopPropagation()"><label>Secure START UP personnel arrangements (man power)</label></div>
+        <div class="sub"><input class="cbx" type="checkbox" onclick="event.stopPropagation()"><label>2. Inspect lighting system already</label></div>
+        <div class="sub"><input class="cbx" type="checkbox" onclick="event.stopPropagation()"><label>★ Confirm completion of inter lock and sequence test</label></div>
+        <div class="note"><span class="pic">👤 ผู้รับผิดชอบ: Somchai</span></div>
+      </div></div>
+    </div>
+
+    <!-- done (collapsed) -->
+    <div class="task done" onclick="tog(this,event)">
+      <div class="task-head">
+        <div class="time-chip"><div class="d">04 มิ.ย.</div><div class="t">08:30</div></div>
+        <div class="task-main">
+          <div class="desc">■ Preparation and receive utilities</div>
+          <div class="meta-row">
+            <div class="bar dn"><i style="width:100%"></i></div>
+            <span class="frac">2/2</span>
+            <span class="stat d">เสร็จ</span>
+          </div>
+        </div>
+        <svg class="chev" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7l5 5 5-5"/></svg>
+      </div>
+      <div class="subs"><div class="subs-in">
+        <div class="sub"><input class="cbx" type="checkbox" checked onclick="event.stopPropagation()"><label>IA, SA, 9N, 7N, H₂, FG, DIW, CCW &amp; RCCW</label></div>
+        <div class="sub"><input class="cbx" type="checkbox" checked onclick="event.stopPropagation()"><label>FLW, 3S, 5S, 10S, 25S, 3%Na, 50%Na</label></div>
+      </div></div>
+    </div>
+
+    <!-- pending (collapsed) -->
+    <div class="task" onclick="tog(this,event)">
+      <div class="task-head">
+        <div class="time-chip"><div class="d">04 มิ.ย.</div><div class="t">14:00</div></div>
+        <div class="task-main">
+          <div class="desc">■ Receive DIW, LPW, MPW system</div>
+          <div class="meta-row">
+            <div class="bar"><i style="width:0%"></i></div>
+            <span class="frac">0/5</span>
+            <span class="stat p">รอทำ</span>
+          </div>
+        </div>
+        <svg class="chev" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7l5 5 5-5"/></svg>
+      </div>
+      <div class="subs"><div class="subs-in">
+        <div class="sub"><input class="cbx" type="checkbox" onclick="event.stopPropagation()"><label>DIW to DIW system (for check leak system)</label></div>
+        <div class="sub"><input class="cbx" type="checkbox" onclick="event.stopPropagation()"><label>Receive DIW to PD-502 level to normal (LC-2502 = 80%)</label></div>
+      </div></div>
+    </div>
+
+  </div>
+
+  <div class="buildtag">mobile mockup • v0.1</div>
+
+  <!-- FAB -->
+  <button class="fab" onclick="openSheet()">+</button>
+
+  <!-- BOTTOM NAV -->
+  <nav class="botnav">
+    <div class="nav-it on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>รายการงาน</div>
+    <div class="nav-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="13" y="6" width="3" height="12"/></svg>แดชบอร์ด</div>
+    <div class="nav-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>เครื่องมือ</div>
+    <div class="nav-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>AI</div>
+  </nav>
+
+  <!-- BOTTOM SHEET (add task) -->
+  <div class="scrim" id="scrim" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet">
+    <div class="grab"></div>
+    <h3>เพิ่มงานหลักใหม่</h3>
+    <div class="fld"><span>ชื่องาน</span><input placeholder="เช่น Start PP-502A(B)"></div>
+    <div class="fld"><span>วันและเวลา</span><input value="04/06/2569 14:30"></div>
+    <div class="fld"><span>ผู้รับผิดชอบ</span><input placeholder="ชื่อผู้รับผิดชอบ"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" onclick="closeSheet()">ยกเลิก</button>
+      <button class="btn primary" onclick="closeSheet()">บันทึก</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function tog(el,e){ if(e.target.closest('.cbx'))return; el.classList.toggle('open'); }
+  function openSheet(){ document.getElementById('scrim').classList.add('show'); document.getElementById('sheet').classList.add('show'); }
+  function closeSheet(){ document.getElementById('scrim').classList.remove('show'); document.getElementById('sheet').classList.remove('show'); }
+  setInterval(()=>{ const d=new Date(); document.getElementById('clk').textContent =
+    String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); },1000);
+</script>
+</body>
+</html>
