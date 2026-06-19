@@ -1894,6 +1894,20 @@ const CSS_CLASSES = {
     hidden: 'hidden',
 };
 
+const ALLOWED_TASK_COLORS = new Set([
+    'text-slate-800', 'text-red-600', 'text-green-600', 'text-orange-500', 'text-blue-600',
+]);
+const ALLOWED_SUBTASK_COLORS = new Set([
+    'text-slate-700', 'text-red-600', 'text-green-600', 'text-orange-500', 'text-blue-600',
+]);
+
+function sanitizeTaskColor(color) {
+    return ALLOWED_TASK_COLORS.has(color) ? color : 'text-slate-800';
+}
+function sanitizeSubtaskColor(color) {
+    return ALLOWED_SUBTASK_COLORS.has(color) ? color : 'text-slate-700';
+}
+
 /**
  * Client-side rate limiter — limits calls within a sliding time window.
  * Ref: SKILL references/js-quality.md → createRateLimiter
@@ -2439,7 +2453,7 @@ const App = {
                 ...task,
                 notes: task.notes || '',
                 responsible: task.responsible || '',
-                textColor: task.textColor || 'text-slate-800',
+                textColor: sanitizeTaskColor(task.textColor),
                 actualStartTime: task.actualStartTime || null,
                 actualEndTime: task.actualEndTime || null,
                 completed: task.completed || false,
@@ -2447,6 +2461,7 @@ const App = {
                     ...st,
                     checked: st.checked || false,
                     checkedAt: st.checkedAt || null,
+                    textColor: sanitizeSubtaskColor(st.textColor),
                 }))
             }));
             this.sortTasks();
