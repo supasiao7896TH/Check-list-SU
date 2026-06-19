@@ -3164,7 +3164,7 @@ const App = {
         for (let i = 0; i < maxRetries; i++) {
             try {
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${this.apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`;
                 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
