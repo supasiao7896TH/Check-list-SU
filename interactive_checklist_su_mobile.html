@@ -223,8 +223,7 @@
         .m-stat-d{ color:#15803d; background:#dcfce7; }
         .m-chev{ flex:0 0 auto; width:20px; height:20px; color:#94a3b8; transition:transform .25s; }
         .m-card.m-open .m-chev{ transform:rotate(180deg); }
-        .m-subs{ max-height:0; overflow:hidden; transition:max-height .3s ease; }
-        .m-card.m-open .m-subs{ max-height:2000px; }
+        .m-subs{ max-height:0; overflow:hidden; transition:max-height .35s ease; }
         .m-subs-in{ border-top:1px solid #f1f5f9; padding:6px 12px 12px; }
         .m-sub{ display:flex; gap:12px; align-items:flex-start; padding:11px 6px; min-height:46px; }
         .m-sub + .m-sub{ border-top:1px solid #f8fafc; }
@@ -2526,6 +2525,12 @@ const App = {
             });
         }
         
+        // Set actual scrollHeight for any card that starts expanded,
+        // so no content is clipped by the CSS max-height transition.
+        this.dom.taskListEl.querySelectorAll('.m-card.m-open .m-subs').forEach(subs => {
+            subs.style.maxHeight = subs.scrollHeight + 'px';
+        });
+
         this.updateHighlightStyle();
         this.checkCompletionStatus();
         this.updateMobileHeaderProgress();
@@ -3068,6 +3073,10 @@ const App = {
             if (this.openTaskIds.has(taskId)) this.openTaskIds.delete(taskId);
             else this.openTaskIds.add(taskId);
             card.classList.toggle('m-open');
+            const subs = card.querySelector('.m-subs');
+            if (subs) {
+                subs.style.maxHeight = card.classList.contains('m-open') ? subs.scrollHeight + 'px' : '0';
+            }
         }
     },
 
