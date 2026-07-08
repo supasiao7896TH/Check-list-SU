@@ -231,6 +231,10 @@
                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v.518l3.993 2.662a.75.75 0 01.507.933l-1 3.5a.75.75 0 01-1.44.414L10 8.351 7.19 11.778a.75.75 0 01-1.44-.414l-1-3.5a.75.75 0 01.507-.933L9.25 4.268V3.75A.75.75 0 0110 3zM9.25 12.118V17.25a.75.75 0 001.5 0v-5.132l2.455 1.636a.75.75 0 10.89-1.212l-3.25-2.167a.75.75 0 00-.89 0L6.705 12.542a.75.75 0 00.89 1.212L10 12.118h-.75z" clip-rule="evenodd"></path></svg>
                             ส่งออกแอป (HTML)
                         </button>
+                        <button id="displayNameBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors" title="ตั้งชื่อผู้ใช้งานที่จะแสดงเมื่อมีการแก้ไขข้อมูลร่วมกับคนอื่น">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+                            ชื่อผู้ใช้งาน: <span id="displayNameLabel">-</span>
+                        </button>
                         <button id="generateReportBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Generate Post Start-Up Report (Available when all tasks are complete)" disabled="">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm3.5 4.5a.5.5 0 000 1h5a.5.5 0 000-1h-5zM8 9a.5.5 0 000 1h4a.5.5 0 000-1H8zm-1.5 2.5a.5.5 0 000 1h2a.5.5 0 000-1h-2z" clip-rule="evenodd"></path></svg>
                             สร้างรายงานสรุป
@@ -956,6 +960,20 @@ The plant is currently in preparation for startup, with the following sequence o
             <div class="flex items-center justify-center gap-4 mt-6">
                 <button id="apiKeyCancelBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2.5 px-6 rounded-full transition-colors">ยกเลิก</button>
                 <button id="apiKeySaveBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-full transition-colors">บันทึก Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Display Name Modal (identity for real-time multi-device sync) -->
+    <div id="displayNameModalBackdrop" class="modal-backdrop bg-black/30 fixed inset-0 z-40 backdrop-blur-sm hidden"></div>
+    <div id="displayNameModal" role="dialog" aria-modal="true" aria-labelledby="displayNameModalTitle" class="modal bg-slate-50 rounded-3xl shadow-2xl w-11/12 md:w-1/3 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 border hidden">
+        <div class="p-8 text-center">
+            <h3 id="displayNameModalTitle" class="text-xl font-bold mt-4">ตั้งชื่อผู้ใช้งาน</h3>
+            <p id="displayNameModalMessage" class="text-slate-500 mt-2 mb-6">พิมพ์ชื่อของคุณ เพื่อให้คนอื่นเห็นว่าใครเป็นคนบันทึกความคืบหน้า (ไม่ต้องใช้รหัสผ่าน)</p>
+            <input type="text" id="displayNameInput" maxlength="40" class="w-full text-center border rounded-xl p-2 bg-white border-slate-300" placeholder="เช่น สมชาย, กะ A">
+            <div class="flex items-center justify-center gap-4 mt-6">
+                <button id="displayNameCancelBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2.5 px-6 rounded-full transition-colors">ยกเลิก</button>
+                <button id="displayNameSaveBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-full transition-colors">บันทึกชื่อ</button>
             </div>
         </div>
     </div>
@@ -1864,7 +1882,9 @@ const App = {
     apiKey: null,
     settings: {
         soundEnabled: true,
+        displayName: null,
     },
+    displayNameMandatory: false,
     dom: {}, // To cache DOM elements
     activeModal: null,
     lastFocusedElement: null,
@@ -1894,6 +1914,12 @@ const App = {
         this.resetIdleTimer(IDLE_SCROLL_DELAY_MS); // Start the idle timer on load
         this.showBuildTag();
         this.sweepStaleNotifications(); // clear any stray/baked-in toast immediately
+        this.updateDisplayNameLabel();
+        if (!this.settings.displayName) {
+            this.openDisplayNameModal(true);
+        } else {
+            ensureFirebaseSignedIn().catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
+        }
     },
 
     /** Small build tag so the running version can be confirmed at a glance. */
@@ -1999,6 +2025,14 @@ const App = {
             apiKeyInput: document.getElementById('apiKeyInput'),
             apiKeyCancelBtn: document.getElementById('apiKeyCancelBtn'),
             apiKeySaveBtn: document.getElementById('apiKeySaveBtn'),
+            displayNameBtn: document.getElementById('displayNameBtn'),
+            displayNameLabel: document.getElementById('displayNameLabel'),
+            displayNameModalBackdrop: document.getElementById('displayNameModalBackdrop'),
+            displayNameModal: document.getElementById('displayNameModal'),
+            displayNameModalMessage: document.getElementById('displayNameModalMessage'),
+            displayNameInput: document.getElementById('displayNameInput'),
+            displayNameCancelBtn: document.getElementById('displayNameCancelBtn'),
+            displayNameSaveBtn: document.getElementById('displayNameSaveBtn'),
             tabContainer: document.getElementById('tab-container'),
             tabButtons: document.querySelectorAll('.tab-btn'),
             tabContents: document.querySelectorAll('.tab-content'),
@@ -2068,6 +2102,13 @@ const App = {
         this.dom.apiKeyCancelBtn.addEventListener('click', this.closeApiKeyModal.bind(this));
         this.dom.apiKeySaveBtn.addEventListener('click', this.handleApiKeySubmit.bind(this));
         this.dom.apiKeyModalBackdrop.addEventListener('click', this.closeApiKeyModal.bind(this));
+        this.dom.displayNameBtn.addEventListener('click', (e) => this.openDisplayNameModal(false, e.currentTarget));
+        this.dom.displayNameCancelBtn.addEventListener('click', this.closeDisplayNameModal.bind(this));
+        this.dom.displayNameSaveBtn.addEventListener('click', this.handleDisplayNameSubmit.bind(this));
+        this.dom.displayNameModalBackdrop.addEventListener('click', this.closeDisplayNameModal.bind(this));
+        this.dom.displayNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); this.handleDisplayNameSubmit(); }
+        });
         this.dom.tabContainer.addEventListener('click', this.handleTabClick.bind(this));
         
         // Dashboard Event Listeners
@@ -2603,6 +2644,47 @@ const App = {
     },
 
     closeApiKeyModal() { this.closeActiveModal(); },
+
+    /**
+     * Display-name modal — the app's only "identity" mechanism (no login,
+     * no password). `mandatory` blocks dismissal until a name is entered;
+     * used on first run before `settings.displayName` exists. Reopening it
+     * later from the Data & AI tab (mandatory=false) allows editing/cancel.
+     */
+    openDisplayNameModal(mandatory = false, openerElement) {
+        this.displayNameMandatory = mandatory;
+        this.dom.displayNameInput.value = mandatory ? '' : (this.settings.displayName || '');
+        this.dom.displayNameCancelBtn.classList.toggle(CSS_CLASSES.hidden, mandatory);
+        this.dom.displayNameModalMessage.textContent = mandatory
+            ? 'ก่อนใช้งาน กรุณาพิมพ์ชื่อของคุณ เพื่อให้คนอื่นเห็นว่าใครเป็นคนบันทึกความคืบหน้า (ไม่ต้องใช้รหัสผ่าน)'
+            : 'พิมพ์ชื่อของคุณ เพื่อให้คนอื่นเห็นว่าใครเป็นคนบันทึกความคืบหน้า';
+        this.openModal('displayName', openerElement);
+    },
+
+    closeDisplayNameModal() {
+        if (this.displayNameMandatory && !this.settings.displayName) return;
+        this.closeActiveModal();
+    },
+
+    async handleDisplayNameSubmit() {
+        const name = this.dom.displayNameInput.value.trim();
+        if (!name) {
+            this.showNotification('กรุณาพิมพ์ชื่อของคุณ', 'error');
+            return;
+        }
+        this.settings.displayName = name.slice(0, 40);
+        await this.saveSettings();
+        this.updateDisplayNameLabel();
+        this.displayNameMandatory = false;
+        this.closeActiveModal();
+        ensureFirebaseSignedIn().catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
+    },
+
+    updateDisplayNameLabel() {
+        if (this.dom.displayNameLabel) {
+            this.dom.displayNameLabel.textContent = this.settings.displayName || '-';
+        }
+    },
 
     // ===== EVENT HANDLERS =====
     /**

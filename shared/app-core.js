@@ -131,21 +131,18 @@ function sanitizeSubtaskColor(color) {
 
 /**
  * Firebase bootstrap (Firestore + Anonymous Auth) for real-time multi-device
- * sync. FIREBASE_CONFIG below is a placeholder — replace every
- * "REPLACE_WITH_..." value with your actual Firebase project's config
+ * sync. Config below is this project's actual Firebase web app config
  * (Firebase console → Project settings → General → Your apps → SDK setup).
- *
- * Until FIREBASE_CONFIG is filled in, initFirebase() is a no-op and the app
- * runs exactly as before (local-only) — this lets Phase 1 ship safely ahead
- * of an actual Firebase project existing.
+ * A Firebase web apiKey is not a secret — it only identifies the project to
+ * Google's servers; real access control lives in firestore.rules.
  */
 const FIREBASE_CONFIG = {
-    apiKey: 'REPLACE_WITH_YOUR_FIREBASE_API_KEY',
-    authDomain: 'REPLACE_WITH_YOUR_PROJECT.firebaseapp.com',
-    projectId: 'REPLACE_WITH_YOUR_PROJECT_ID',
-    storageBucket: 'REPLACE_WITH_YOUR_PROJECT.appspot.com',
-    messagingSenderId: 'REPLACE_WITH_YOUR_SENDER_ID',
-    appId: 'REPLACE_WITH_YOUR_APP_ID',
+    apiKey: 'AIzaSyDuCvvohpSgY5AasmvJJf4YvvBM368DUvM',
+    authDomain: 'pta1-check-list-su.firebaseapp.com',
+    projectId: 'pta1-check-list-su',
+    storageBucket: 'pta1-check-list-su.firebasestorage.app',
+    messagingSenderId: '292625103593',
+    appId: '1:292625103593:web:46a181698f8235bad10e78',
 };
 
 // Fixed routing key: all devices read/write projects/{FIREBASE_SYNC_PROJECT_ID}/tasks.
@@ -177,4 +174,25 @@ function initFirebase() {
         firebaseAuth = firebase.auth();
     }
     return firebaseApp;
+}
+
+let _firebaseSignInPromise = null;
+
+/**
+ * Ensures exactly one anonymous Firebase Auth sign-in per page load.
+ * Resolves to the signed-in user, or null if Firebase isn't configured.
+ * This uid is only ever used for Firestore access control/presence — it is
+ * never shown in the UI and is unrelated to the human-chosen displayName
+ * the user types into the app (see App.settings.displayName).
+ */
+function ensureFirebaseSignedIn() {
+    if (!isFirebaseConfigured()) return Promise.resolve(null);
+    initFirebase();
+    if (firebaseAuth.currentUser) return Promise.resolve(firebaseAuth.currentUser);
+    if (!_firebaseSignInPromise) {
+        _firebaseSignInPromise = firebaseAuth.signInAnonymously()
+            .then(cred => cred.user)
+            .catch(err => { _firebaseSignInPromise = null; throw err; });
+    }
+    return _firebaseSignInPromise;
 }
