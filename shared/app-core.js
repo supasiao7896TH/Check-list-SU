@@ -110,6 +110,29 @@ const CRYPTO_VAULT = (() => {
 })();
 
 /**
+ * Admin PIN — a single shared PIN unlocks "edit mode" (see App.isEditingAllowed,
+ * App.handlePinSubmit). This is a "quick", UI-only gate, not real access
+ * control: this is a static site with no backend, so ADMIN_PIN_HASH_HEX is
+ * visible to anyone who views the page source, and hashing a short/numeric
+ * PIN adds no real secrecy against a determined person (a 6-digit PIN has
+ * at most ~10^6 possibilities to brute-force offline against the hash).
+ * The hash only stops a casual viewer from reading the literal PIN off the
+ * page. Firestore security rules are NOT tightened by this feature — any
+ * anonymously-signed-in client can still write directly to Firestore by
+ * bypassing the UI entirely (see firestore.rules and agents.md).
+ */
+const ADMIN_PIN_HASH_HEX = '0a1d18a485f77dcee53ea81f1010276b67153b745219afc4eac4288045f5ca3d';
+
+async function sha256Hex(text) {
+    const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(bytes)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyPin(candidate) {
+    return (await sha256Hex(candidate)) === ADMIN_PIN_HASH_HEX;
+}
+
+/**
  * Color allow-lists — sanitize task/subtask textColor against a known-safe
  * set on load, since these values ultimately end up in class attributes.
  * Previously only present in the mobile build (see commit 539c8dc); the
