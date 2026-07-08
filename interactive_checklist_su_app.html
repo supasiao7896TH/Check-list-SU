@@ -235,6 +235,10 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
                             ชื่อผู้ใช้งาน: <span id="displayNameLabel">-</span>
                         </button>
+                        <button id="editModeBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors" title="โหมดดูอย่างเดียว/แก้ไข">
+                            <svg id="editModeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                            <span id="editModeLabel">ดูอย่างเดียว (ปลดล็อกโหมดแก้ไข)</span>
+                        </button>
                         <button id="generateReportBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="Generate Post Start-Up Report (Available when all tasks are complete)" disabled="">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm3.5 4.5a.5.5 0 000 1h5a.5.5 0 000-1h-5zM8 9a.5.5 0 000 1h4a.5.5 0 000-1H8zm-1.5 2.5a.5.5 0 000 1h2a.5.5 0 000-1h-2z" clip-rule="evenodd"></path></svg>
                             สร้างรายงานสรุป
@@ -977,6 +981,20 @@ The plant is currently in preparation for startup, with the following sequence o
             <div class="flex items-center justify-center gap-4 mt-6">
                 <button id="displayNameCancelBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2.5 px-6 rounded-full transition-colors">ยกเลิก</button>
                 <button id="displayNameSaveBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-full transition-colors">บันทึกชื่อ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIN Modal (unlock edit mode — quick UI-level gate, see agents.md) -->
+    <div id="pinModalBackdrop" class="modal-backdrop bg-black/30 fixed inset-0 z-40 backdrop-blur-sm hidden"></div>
+    <div id="pinModal" role="dialog" aria-modal="true" aria-labelledby="pinModalTitle" class="modal bg-slate-50 rounded-3xl shadow-2xl w-11/12 md:w-1/3 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 border hidden">
+        <div class="p-8 text-center">
+            <h3 id="pinModalTitle" class="text-xl font-bold mt-4">ปลดล็อกโหมดแก้ไข</h3>
+            <p class="text-slate-500 mt-2 mb-6">กรอกรหัส PIN ที่ทีมงานใช้ร่วมกันเพื่อแก้ไข/ติ๊กงานได้ ไม่ทราบ PIN ก็ยังดูความคืบหน้าแบบเรียลไทม์ได้ตามปกติ</p>
+            <input type="password" id="pinInput" inputmode="numeric" class="w-full text-center border rounded-xl p-2 bg-white border-slate-300" placeholder="รหัส PIN">
+            <div class="flex items-center justify-center gap-4 mt-6">
+                <button id="pinCancelBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2.5 px-6 rounded-full transition-colors">ยกเลิก</button>
+                <button id="pinSubmitBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-full transition-colors">ปลดล็อก</button>
             </div>
         </div>
     </div>
@@ -1886,6 +1904,7 @@ const App = {
     settings: {
         soundEnabled: true,
         displayName: null,
+        adminUnlocked: false,
     },
     displayNameMandatory: false,
     dom: {}, // To cache DOM elements
@@ -1918,6 +1937,7 @@ const App = {
         this.showBuildTag();
         this.sweepStaleNotifications(); // clear any stray/baked-in toast immediately
         this.updateDisplayNameLabel();
+        this.updateEditModeUI();
         if (!this.settings.displayName) {
             this.openDisplayNameModal(true);
         } else {
@@ -2039,6 +2059,14 @@ const App = {
             displayNameInput: document.getElementById('displayNameInput'),
             displayNameCancelBtn: document.getElementById('displayNameCancelBtn'),
             displayNameSaveBtn: document.getElementById('displayNameSaveBtn'),
+            editModeBtn: document.getElementById('editModeBtn'),
+            editModeLabel: document.getElementById('editModeLabel'),
+            editModeIcon: document.getElementById('editModeIcon'),
+            pinModalBackdrop: document.getElementById('pinModalBackdrop'),
+            pinModal: document.getElementById('pinModal'),
+            pinInput: document.getElementById('pinInput'),
+            pinCancelBtn: document.getElementById('pinCancelBtn'),
+            pinSubmitBtn: document.getElementById('pinSubmitBtn'),
             onlineUsersBar: document.getElementById('onlineUsersBar'),
             onlineUsersList: document.getElementById('onlineUsersList'),
             tabContainer: document.getElementById('tab-container'),
@@ -2116,6 +2144,13 @@ const App = {
         this.dom.displayNameModalBackdrop.addEventListener('click', this.closeDisplayNameModal.bind(this));
         this.dom.displayNameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); this.handleDisplayNameSubmit(); }
+        });
+        this.dom.editModeBtn.addEventListener('click', (e) => this.handleEditModeToggle(e.currentTarget));
+        this.dom.pinCancelBtn.addEventListener('click', this.closePinModal.bind(this));
+        this.dom.pinSubmitBtn.addEventListener('click', this.handlePinSubmit.bind(this));
+        this.dom.pinModalBackdrop.addEventListener('click', this.closePinModal.bind(this));
+        this.dom.pinInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); this.handlePinSubmit(); }
         });
         this.dom.tabContainer.addEventListener('click', this.handleTabClick.bind(this));
         
@@ -2306,10 +2341,11 @@ const App = {
             });
         }
         
-        this.updateHighlightStyle(); 
+        this.updateHighlightStyle();
         this.checkCompletionStatus();
+        this.updateEditModeUI();
     },
-    
+
     getFilteredTasks() {
         const searchTermLower = this.searchTerm.toLowerCase();
         
@@ -2374,7 +2410,7 @@ const App = {
             <div class="subtask-item flex items-start gap-3 p-2 hover:bg-slate-100 rounded-lg">
                 <input type="checkbox" id="task-complete-${task.id}" data-task-id="${task.id}" data-task-complete="true"
                     class="h-5 w-5 mt-1 flex-shrink-0 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500"
-                    ${task.completed ? 'checked' : ''}>
+                    ${task.completed ? 'checked' : ''} ${this.isEditingAllowed() ? '' : 'disabled'}>
                 <label for="task-complete-${task.id}" class="flex-1 text-slate-700 font-medium">เสร็จสิ้นงานนี้</label>
             </div>` : '';
 
@@ -2411,7 +2447,7 @@ const App = {
                     </div>
                     ` : ''}
                 </div>
-                <div class="flex gap-2 self-start md:self-center flex-shrink-0">
+                <div class="flex gap-2 self-start md:self-center flex-shrink-0 ${this.isEditingAllowed() ? '' : CSS_CLASSES.hidden}">
                     <button class="edit-btn p-2 text-slate-400 hover:text-blue-500 rounded-full hover:bg-slate-100 transition-colors" title="แก้ไขงาน">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path></svg>
                     </button>
@@ -2462,12 +2498,13 @@ const App = {
     },
 
     renderSubtasks(subtasks, taskId) {
+        const disabledAttr = this.isEditingAllowed() ? '' : 'disabled';
         return subtasks.map(subtask => {
             const isSubItem = subtask.text.trim().startsWith('-');
             const paddingClass = isSubItem ? 'pl-6' : '';
             return `
             <div class="subtask-item flex items-start gap-3 p-2 hover:bg-slate-100 rounded-lg ${paddingClass}">
-                <input type="checkbox" id="${subtask.id}" data-task-id="${taskId}" data-subtask-id="${subtask.id}" class="h-5 w-5 mt-1 flex-shrink-0 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500" ${subtask.checked ? 'checked' : ''}>
+                <input type="checkbox" id="${subtask.id}" data-task-id="${taskId}" data-subtask-id="${subtask.id}" class="h-5 w-5 mt-1 flex-shrink-0 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500" ${subtask.checked ? 'checked' : ''} ${disabledAttr}>
                 <label for="${subtask.id}" class="flex-1 ${subtask.textColor || 'text-slate-700'}">${this.escapeHTML(subtask.text.replace(/^[\s]*[\-\*]\s/, ''))}</label>
             </div>
             `;
@@ -2599,6 +2636,10 @@ const App = {
     },
     
     openEditModal(taskId = null, openerElement) {
+        if (!this.isEditingAllowed()) {
+            this.showNotification('โหมดดูอย่างเดียว: กรุณาปลดล็อกด้วยรหัส PIN ก่อนแก้ไขข้อมูล', 'error');
+            return;
+        }
         this.dom.editTaskForm.reset();
         this.dom.subtaskListEditor.innerHTML = '';
         
@@ -2738,6 +2779,64 @@ const App = {
         this.dom.onlineUsersList.textContent = others.map(o => o.displayName || 'ไม่ระบุชื่อ').join(', ');
     },
 
+    /**
+     * Quick, UI-only edit-mode gate (see agents.md/context.md for the
+     * explicit limitation: this is not enforced by firestore.rules).
+     * Every mutating handler must check this before touching this.tasks.
+     */
+    isEditingAllowed() {
+        return !!this.settings.adminUnlocked;
+    },
+
+    openPinModal(openerElement) {
+        this.dom.pinInput.value = '';
+        this.openModal('pin', openerElement);
+    },
+
+    closePinModal() {
+        this.closeActiveModal();
+    },
+
+    async handleEditModeToggle(openerElement) {
+        if (this.isEditingAllowed()) {
+            this.settings.adminUnlocked = false;
+            await this.saveSettings();
+            this.render(); // re-render so checkboxes/edit-delete buttons pick up the new lock state
+            this.showNotification('เปลี่ยนเป็นโหมดดูอย่างเดียวแล้ว', 'info');
+        } else {
+            this.openPinModal(openerElement);
+        }
+    },
+
+    async handlePinSubmit() {
+        const pin = this.dom.pinInput.value.trim();
+        if (!pin) {
+            this.showNotification('กรุณากรอกรหัส PIN', 'error');
+            return;
+        }
+        const ok = await verifyPin(pin);
+        if (ok) {
+            this.settings.adminUnlocked = true;
+            await this.saveSettings();
+            this.closePinModal();
+            this.render(); // re-render so checkboxes/edit-delete buttons pick up the new lock state
+            this.showNotification('ปลดล็อกโหมดแก้ไขแล้ว', 'success');
+        } else {
+            this.dom.pinInput.value = '';
+            this.showNotification('รหัส PIN ไม่ถูกต้อง', 'error');
+        }
+    },
+
+    /** Toggles visibility of every mutating control based on isEditingAllowed(). */
+    updateEditModeUI() {
+        const allowed = this.isEditingAllowed();
+        if (this.dom.editModeLabel) {
+            this.dom.editModeLabel.textContent = allowed ? 'โหมดแก้ไข (กดเพื่อล็อก)' : 'ดูอย่างเดียว (ปลดล็อกโหมดแก้ไข)';
+        }
+        [this.dom.addNewTaskBtn, this.dom.clearAllChecksBtn, this.dom.resetDataBtn, this.dom.importDataBtn]
+            .forEach(btn => { if (btn) btn.classList.toggle(CSS_CLASSES.hidden, !allowed); });
+    },
+
     // ===== EVENT HANDLERS =====
     /**
      * Resets the idle timer whenever user activity is detected.
@@ -2767,6 +2866,10 @@ const App = {
 
     handleEditFormSubmit(e) {
         e.preventDefault();
+        if (!this.isEditingAllowed()) {
+            this.showNotification('โหมดดูอย่างเดียว: กรุณาปลดล็อกด้วยรหัส PIN ก่อนแก้ไขข้อมูล', 'error');
+            return;
+        }
         this.resetIdleTimer(AUTO_SCROLL_DELAY_MS);
         const id = this.dom.editTaskIdInput.value;
         const description = this.dom.taskDescriptionInput.value.trim();
@@ -2857,6 +2960,11 @@ const App = {
     },
 
     handleImport(event) {
+        if (!this.isEditingAllowed()) {
+            this.showNotification('โหมดดูอย่างเดียว: กรุณาปลดล็อกด้วยรหัส PIN ก่อนแก้ไขข้อมูล', 'error');
+            event.target.value = '';
+            return;
+        }
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -2904,6 +3012,10 @@ const App = {
         }
         const deleteBtn = e.target.closest('.delete-btn');
         if (deleteBtn) {
+            if (!this.isEditingAllowed()) {
+                this.showNotification('โหมดดูอย่างเดียว: กรุณาปลดล็อกด้วยรหัส PIN ก่อนแก้ไขข้อมูล', 'error');
+                return;
+            }
             const taskId = deleteBtn.closest('.task-card').dataset.taskId;
             this.openConfirmModal('ยืนยันการลบงาน', 'คุณแน่ใจหรือไม่ว่าต้องการลบงานหลักนี้และงานย่อยทั้งหมด?', () => {
                 this.tasks = this.tasks.filter(t => t.id !== taskId);
@@ -2919,6 +3031,11 @@ const App = {
     handleSubtaskChange(e) {
         const input = e.target;
         if (input.matches('input[type="checkbox"]')) {
+            if (!this.isEditingAllowed()) {
+                input.checked = !input.checked; // revert any UI change that slipped through
+                this.showNotification('โหมดดูอย่างเดียว: กรุณาปลดล็อกด้วยรหัส PIN ก่อนแก้ไขข้อมูล', 'error');
+                return;
+            }
             if (input.dataset.taskComplete) {
                 const taskId = input.dataset.taskId;
                 const task = this.tasks.find(t => t.id === taskId);
@@ -2995,6 +3112,10 @@ const App = {
      * NEW: Clears actual time data when clearing checks.
      */
     handleClearAllChecks(e) {
+        if (!this.isEditingAllowed()) {
+            this.showNotification('โหมดดูอย่างเดียว: กรุณาปลดล็อกด้วยรหัส PIN ก่อนแก้ไขข้อมูล', 'error');
+            return;
+        }
         this.openConfirmModal('ล้างสถานะเช็คลิสต์ทั้งหมด?', 'การกระทำนี้จะล้างเครื่องหมายถูกและเวลาที่บันทึกไว้ทั้งหมด แต่จะไม่ลบงานของคุณ', () => {
             this.tasks.forEach(task => {
                 task.actualStartTime = null;
@@ -3014,6 +3135,10 @@ const App = {
     },
 
     handleResetData(e) {
+        if (!this.isEditingAllowed()) {
+            this.showNotification('โหมดดูอย่างเดียว: กรุณาปลดล็อกด้วยรหัส PIN ก่อนแก้ไขข้อมูล', 'error');
+            return;
+        }
         const confirmationText = 'รีเซ็ต';
         this.openConfirmModal('รีเซ็ตข้อมูลทั้งหมด?', `การกระทำนี้จะลบข้อมูลปัจจุบันทั้งหมดและโหลดรายการงานเริ่มต้นเข้ามาใหม่ <strong>ไม่สามารถย้อนกลับได้</strong><br>โปรดพิมพ์ "${confirmationText}" เพื่อยืนยัน:`, async () => {
             const input = document.getElementById('confirmInput');
@@ -3272,6 +3397,14 @@ const App = {
             const stored = await STORAGE_ENGINE.get('settings');
             if (stored) {
                 this.settings = { ...this.settings, ...stored };
+                // Migration: a device that was already active (has a displayName)
+                // before edit-mode gating existed is trusted and stays unlocked;
+                // a genuinely new device with no prior settings defaults to
+                // locked/view-only via the settings object literal above.
+                if (!('adminUnlocked' in stored)) {
+                    this.settings.adminUnlocked = !!this.settings.displayName;
+                    await this.saveSettings();
+                }
             }
         } catch (error) {
             console.error("Error loading settings, using defaults:", error);

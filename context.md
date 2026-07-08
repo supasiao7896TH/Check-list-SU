@@ -93,6 +93,26 @@ this is what lets outbound writes touch only the exact subtask that
 changed via Firestore's dotted-path `update()`, without clobbering
 concurrent edits to other subtasks of the same task.
 
+## Access control (viewer/admin PIN gate)
+
+By default, anyone who opens the app's link is in **view-only mode**: they
+see the live checklist and real-time updates, but every mutating control
+(check/uncheck, add/edit/delete task, import, reset, clear-all-checks) is
+hidden or disabled. Entering a shared PIN (`App.handlePinSubmit`, checked
+against `ADMIN_PIN_HASH_HEX` in `shared/app-core.js` via `verifyPin()`)
+unlocks "edit mode" (`settings.adminUnlocked`) on that device, persisted
+across reloads until explicitly locked again. Every mutating handler also
+has its own `isEditingAllowed()` guard as defense-in-depth, independent of
+whether its UI control was correctly hidden.
+
+**This is intentionally a UI-only gate, not real access control.**
+`firestore.rules` still allows any anonymously-signed-in client to write —
+someone with enough technical knowledge to open browser devtools can
+bypass every check described above and write to Firestore directly. This
+was a deliberate scope choice (see `agents.md` point 7) to keep the
+feature simple; it stops accidental edits from casual viewers, not a
+determined bad actor.
+
 ## Deployment
 
 Static hosting via GitHub Pages (`.nojekyll` present so Pages serves the

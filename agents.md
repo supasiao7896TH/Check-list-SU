@@ -48,6 +48,20 @@ This file is about *how to work in this codebase* safely.
    they're covered by both the outbound diff and the inbound merge, or
    they'll silently fail to sync or get clobbered.
 
+7. **The viewer/admin PIN gate is UI-only — do not treat it as real access
+   control.** `App.isEditingAllowed()` (each HTML file, reads
+   `settings.adminUnlocked`) gates every mutating handler and hides/disables
+   the corresponding controls, but `firestore.rules` still allows any
+   anonymously-signed-in client to write. Anyone who opens devtools and
+   calls the already-loaded Firebase SDK directly (or hits the Firestore
+   REST API using the non-secret `FIREBASE_CONFIG`) bypasses this entirely.
+   If you ever need this enforced for real, that requires distinguishing
+   admin/viewer at the Firestore rules level (e.g. custom auth claims via a
+   Cloud Function) — a real change, not a tweak to `isEditingAllowed()`.
+   `ADMIN_PIN_HASH_HEX` (`shared/app-core.js`) is a SHA-256 hash, not
+   encryption — never put the plaintext PIN in a commit, and remember the
+   hash itself is visible in page source to anyone who looks.
+
 ## Testing changes
 
 There's no automated test suite. To verify a change:
