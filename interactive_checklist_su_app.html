@@ -2814,7 +2814,14 @@ const App = {
             this.showNotification('กรุณากรอกรหัส PIN', 'error');
             return;
         }
-        const ok = await verifyPin(pin);
+        let ok;
+        try {
+            ok = await verifyPin(pin);
+        } catch (error) {
+            console.error('PIN verification failed:', error);
+            this.showNotification('เกิดข้อผิดพลาด กรุณารีเฟรชหน้าใหม่แล้วลองอีกครั้ง', 'error');
+            return;
+        }
         if (ok) {
             this.settings.adminUnlocked = true;
             await this.saveSettings();
