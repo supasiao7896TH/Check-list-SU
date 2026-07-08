@@ -40,6 +40,16 @@ This file is about *how to work in this codebase* safely.
    console for CSP violation warnings after any such change, since they
    don't surface as visible UI errors.
 
+5a. **Service worker cache.** `sw.js` caches `shared/app-core.js` (and the
+   rest of `SHELL`) cache-first under a fixed `CACHE` name. Whenever you
+   change `shared/app-core.js` (or anything else in `SHELL`), **bump the
+   `CACHE` version string** — otherwise browsers that already have this
+   PWA installed/cached keep serving the old file indefinitely, even
+   though the HTML itself updates (HTML navigations are network-first).
+   This caused a real bug: a PIN-unlock feature shipped to `shared/app-core.js`
+   silently failed for a user who'd cached the app before that change,
+   because their browser kept serving the pre-PIN `shared/app-core.js`.
+
 6. **Sync conflict granularity.** `SYNC_ENGINE`'s outbound diffing writes
    Firestore updates scoped to the exact field paths that changed (see
    `diffTaskFields` in `shared/app-core.js`), and inbound merging compares

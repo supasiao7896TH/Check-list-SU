@@ -1,5 +1,5 @@
 /* Service Worker — Check list SU (mobile PWA) */
-const CACHE = 'su-checklist-v1';
+const CACHE = 'su-checklist-v2';
 const SHELL = [
   './',
   './interactive_checklist_su_mobile.html',
