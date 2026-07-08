@@ -3,6 +3,7 @@ const CACHE = 'su-checklist-v1';
 const SHELL = [
   './',
   './interactive_checklist_su_mobile.html',
+  './shared/app-core.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
