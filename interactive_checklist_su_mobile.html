@@ -2060,7 +2060,7 @@ const App = {
         if (!this.settings.displayName) {
             this.openDisplayNameModal(true);
         } else {
-            ensureFirebaseSignedIn().catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
+            ensureFirebaseSignedIn().then(() => SYNC_ENGINE.flush()).catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
         }
     },
 
@@ -2419,6 +2419,10 @@ const App = {
             }));
             this.sortTasks();
             this.resetAllNotifications();
+            // Baseline for future sync diffs: empty on first-ever run (so the
+            // freshly-seeded defaults below get pushed to Firestore as new
+            // tasks), or the just-loaded state otherwise (no diff to push).
+            SYNC_ENGINE.seedSnapshot(hasStored ? this.tasks : []);
             if (!hasStored) await this.saveTasks(); // persist freshly-loaded defaults
         } catch (error) {
             console.error("Error loading tasks:", error);
@@ -2435,6 +2439,8 @@ const App = {
             console.error("Failed to save tasks to IndexedDB:", error);
             this.showNotification('Error: Could not save data. Storage might be full.', 'error');
         }
+        SYNC_ENGINE.onLocalTasksSaved(this.tasks, this.settings.displayName)
+            .catch(err => console.warn('[SYNC] failed to enqueue changes:', err));
         this.checkCompletionStatus();
     },
 
@@ -2890,7 +2896,7 @@ const App = {
         this.updateDisplayNameLabel();
         this.displayNameMandatory = false;
         this.closeActiveModal();
-        ensureFirebaseSignedIn().catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
+        ensureFirebaseSignedIn().then(() => SYNC_ENGINE.flush()).catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
     },
 
     updateDisplayNameLabel() {

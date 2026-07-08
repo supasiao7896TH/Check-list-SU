@@ -196,3 +196,220 @@ function ensureFirebaseSignedIn() {
     }
     return _firebaseSignInPromise;
 }
+
+/**
+ * SYNC_ENGINE — bridges local STORAGE_ENGINE/App.tasks with Firestore.
+ *
+ * STORAGE_ENGINE stays the ONE local source of truth; Firestore's own
+ * offline persistence is intentionally never enabled (see plan notes) —
+ * Firestore here is purely a relay between devices. All read/render logic
+ * in App keeps working unchanged: this engine only ever calls the existing
+ * STORAGE_ENGINE.put('tasks', ...) + App.render() to apply remote changes,
+ * and only ever reads App.tasks to push local changes out.
+ *
+ * Local plain-object markers (never real Firestore SDK objects) are used
+ * inside queued operations so the queue stays IndexedDB-structured-clone
+ * safe — Firestore's FieldValue sentinels are NOT clonable and must only
+ * be constructed at the moment of an actual network write.
+ */
+const SYNC_QUEUE_KEY = '_syncQueue';
+const SERVER_TIMESTAMP_MARKER = '__FIRESTORE_SERVER_TIMESTAMP__';
+const FIELD_DELETE_MARKER = '__FIRESTORE_FIELD_DELETE__';
+
+const SYNC_ENGINE = (() => {
+    'use strict';
+    let queue = [];
+    let queueLoaded = false;
+    let flushing = false;
+    let lastKnownSnapshot = null; // last App.tasks state we've already diffed
+
+    function tasksCollection() {
+        return firestoreDb.collection('projects').doc(FIREBASE_SYNC_PROJECT_ID).collection('tasks');
+    }
+
+    function subtaskArrayToMap(subtasks) {
+        const map = {};
+        (subtasks || []).forEach((st, index) => {
+            map[st.id] = {
+                text: st.text || '',
+                checked: !!st.checked,
+                checkedAt: st.checkedAt || null,
+                textColor: st.textColor || 'text-slate-700',
+                order: index,
+                updatedAt: Date.now(),
+                lastEditedBy: null,
+            };
+        });
+        return map;
+    }
+
+    /** Full-document shape for a brand-new task (op.type === 'set' only). */
+    function taskToFirestoreDoc(task, displayName) {
+        return {
+            description: task.description || '',
+            datetime: task.datetime || '',
+            notes: task.notes || '',
+            responsible: task.responsible || '',
+            textColor: task.textColor || 'text-slate-800',
+            completed: !!task.completed,
+            actualStartTime: task.actualStartTime || null,
+            actualEndTime: task.actualEndTime || null,
+            subtasks: subtaskArrayToMap(task.subtasks),
+            updatedAt: Date.now(),
+            lastEditedBy: displayName || null,
+        };
+    }
+
+    /**
+     * Diffs one existing task's fields, returning a flat dotted-path
+     * field map (Firestore update() syntax) with ONLY the paths that
+     * actually changed — so a subtask checkbox toggle never touches any
+     * other subtask, and never clobbers a concurrent edit from another
+     * device to a different field/subtask of the same task. Returns null
+     * if nothing changed.
+     */
+    function diffTaskFields(prevTask, task, displayName) {
+        const fields = {};
+        let changed = false;
+        ['description', 'datetime', 'notes', 'responsible', 'textColor', 'completed', 'actualStartTime', 'actualEndTime']
+            .forEach(key => {
+                if (prevTask[key] !== task[key]) {
+                    fields[key] = task[key] ?? null;
+                    changed = true;
+                }
+            });
+
+        const prevSubtasksById = new Map((prevTask.subtasks || []).map((st, i) => [st.id, { ...st, order: i }]));
+        (task.subtasks || []).forEach((st, index) => {
+            const prevSt = prevSubtasksById.get(st.id);
+            const subtaskChanged = !prevSt || ['text', 'checked', 'checkedAt', 'textColor'].some(key => prevSt[key] !== st[key]) || prevSt.order !== index;
+            if (subtaskChanged) {
+                fields[`subtasks.${st.id}.text`] = st.text || '';
+                fields[`subtasks.${st.id}.checked`] = !!st.checked;
+                fields[`subtasks.${st.id}.checkedAt`] = st.checkedAt || null;
+                fields[`subtasks.${st.id}.textColor`] = st.textColor || 'text-slate-700';
+                fields[`subtasks.${st.id}.order`] = index;
+                fields[`subtasks.${st.id}.updatedAt`] = SERVER_TIMESTAMP_MARKER;
+                fields[`subtasks.${st.id}.lastEditedBy`] = displayName || null;
+                changed = true;
+            }
+        });
+        prevSubtasksById.forEach((_prevSt, subId) => {
+            if (!(task.subtasks || []).some(st => st.id === subId)) {
+                fields[`subtasks.${subId}`] = FIELD_DELETE_MARKER;
+                changed = true;
+            }
+        });
+
+        if (!changed) return null;
+        fields.updatedAt = SERVER_TIMESTAMP_MARKER;
+        fields.lastEditedBy = displayName || null;
+        return fields;
+    }
+
+    /** Replaces local markers with real Firestore SDK sentinels, at write time only. */
+    function resolveMarkers(flatObj) {
+        const out = {};
+        for (const [key, value] of Object.entries(flatObj)) {
+            if (value === SERVER_TIMESTAMP_MARKER) out[key] = firebase.firestore.FieldValue.serverTimestamp();
+            else if (value === FIELD_DELETE_MARKER) out[key] = firebase.firestore.FieldValue.delete();
+            else out[key] = value;
+        }
+        return out;
+    }
+
+    async function loadQueue() {
+        if (queueLoaded) return;
+        const stored = await STORAGE_ENGINE.get(SYNC_QUEUE_KEY);
+        queue = Array.isArray(stored) ? stored : [];
+        queueLoaded = true;
+    }
+
+    async function persistQueue() {
+        await STORAGE_ENGINE.put(SYNC_QUEUE_KEY, queue);
+    }
+
+    async function enqueue(op) {
+        await loadQueue();
+        queue.push(op);
+        await persistQueue();
+        flush(); // fire-and-forget best-effort attempt; safe to ignore the promise
+    }
+
+    /** Establishes the baseline for future diffs, without enqueueing anything. */
+    function seedSnapshot(tasks) {
+        lastKnownSnapshot = JSON.parse(JSON.stringify(tasks || []));
+    }
+
+    /**
+     * Called after every successful local saveTasks(). Diffs against the
+     * last-seeded snapshot and enqueues exactly the operations needed to
+     * bring Firestore up to date — full `set` for brand-new tasks, `delete`
+     * for removed tasks, field-scoped `update` for everything else.
+     */
+    async function onLocalTasksSaved(tasks, displayName) {
+        const prevTasks = lastKnownSnapshot || [];
+        seedSnapshot(tasks); // update baseline immediately so we never double-diff
+        if (!isFirebaseConfigured()) return;
+
+        const prevById = new Map(prevTasks.map(t => [t.id, t]));
+        const nextById = new Map(tasks.map(t => [t.id, t]));
+
+        for (const [id, task] of nextById) {
+            if (!prevById.has(id)) {
+                await enqueue({ type: 'set', taskId: id, doc: taskToFirestoreDoc(task, displayName), ts: Date.now() });
+                continue;
+            }
+            const fields = diffTaskFields(prevById.get(id), task, displayName);
+            if (fields) {
+                await enqueue({ type: 'update', taskId: id, fields, ts: Date.now() });
+            }
+        }
+        for (const id of prevById.keys()) {
+            if (!nextById.has(id)) {
+                await enqueue({ type: 'delete', taskId: id, ts: Date.now() });
+            }
+        }
+    }
+
+    /** Drains the persisted queue in order; stops (keeping remaining ops) on first failure. */
+    async function flush() {
+        if (flushing || !isFirebaseConfigured()) return;
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+        flushing = true;
+        try {
+            await loadQueue();
+            await ensureFirebaseSignedIn();
+            while (queue.length) {
+                const op = queue[0];
+                try {
+                    const ref = tasksCollection().doc(op.taskId);
+                    if (op.type === 'set') {
+                        await ref.set(op.doc, { merge: true });
+                    } else if (op.type === 'update') {
+                        await ref.update(resolveMarkers(op.fields));
+                    } else if (op.type === 'delete') {
+                        await ref.delete();
+                    }
+                    queue.shift();
+                    await persistQueue();
+                } catch (err) {
+                    console.warn('[SYNC] push failed, will retry later:', err);
+                    break;
+                }
+            }
+        } finally {
+            flushing = false;
+        }
+    }
+
+    function scheduleFlushOnReconnect() {
+        if (typeof window === 'undefined') return;
+        window.addEventListener('online', () => flush());
+        setInterval(() => flush(), 30000); // periodic safety-net retry
+    }
+
+    return { seedSnapshot, onLocalTasksSaved, flush, scheduleFlushOnReconnect };
+})();
+
+SYNC_ENGINE.scheduleFlushOnReconnect();
