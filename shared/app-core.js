@@ -266,9 +266,12 @@ const SYNC_ENGINE = (() => {
      * actually changed — so a subtask checkbox toggle never touches any
      * other subtask, and never clobbers a concurrent edit from another
      * device to a different field/subtask of the same task. Returns null
-     * if nothing changed.
+     * if nothing changed. Also stamps `task`/its changed subtasks in place
+     * with a local updatedAt/lastEditedBy, so this same information is
+     * persisted locally (for future inbound-merge comparisons) in the same
+     * STORAGE_ENGINE.put the caller performs right after this runs.
      */
-    function diffTaskFields(prevTask, task, displayName) {
+    function diffTaskFields(prevTask, task, displayName, nowMs) {
         const fields = {};
         let changed = false;
         ['description', 'datetime', 'notes', 'responsible', 'textColor', 'completed', 'actualStartTime', 'actualEndTime']
@@ -291,6 +294,8 @@ const SYNC_ENGINE = (() => {
                 fields[`subtasks.${st.id}.order`] = index;
                 fields[`subtasks.${st.id}.updatedAt`] = SERVER_TIMESTAMP_MARKER;
                 fields[`subtasks.${st.id}.lastEditedBy`] = displayName || null;
+                st.updatedAt = nowMs;
+                st.lastEditedBy = displayName || null;
                 changed = true;
             }
         });
@@ -304,6 +309,8 @@ const SYNC_ENGINE = (() => {
         if (!changed) return null;
         fields.updatedAt = SERVER_TIMESTAMP_MARKER;
         fields.lastEditedBy = displayName || null;
+        task.updatedAt = nowMs;
+        task.lastEditedBy = displayName || null;
         return fields;
     }
 
@@ -342,33 +349,44 @@ const SYNC_ENGINE = (() => {
     }
 
     /**
-     * Called after every successful local saveTasks(). Diffs against the
-     * last-seeded snapshot and enqueues exactly the operations needed to
-     * bring Firestore up to date — full `set` for brand-new tasks, `delete`
-     * for removed tasks, field-scoped `update` for everything else.
+     * Call BEFORE STORAGE_ENGINE.put in saveTasks(): synchronously diffs
+     * `tasks` against the last-seeded snapshot, stamps changed tasks/
+     * subtasks with a local updatedAt/lastEditedBy (so the stamps land in
+     * the very same IndexedDB write as the edit itself), and returns the
+     * list of pending Firestore operations to commit afterwards. Does NOT
+     * touch IndexedDB or the network itself.
      */
-    async function onLocalTasksSaved(tasks, displayName) {
+    function prepareSync(tasks, displayName) {
         const prevTasks = lastKnownSnapshot || [];
-        seedSnapshot(tasks); // update baseline immediately so we never double-diff
-        if (!isFirebaseConfigured()) return;
-
         const prevById = new Map(prevTasks.map(t => [t.id, t]));
         const nextById = new Map(tasks.map(t => [t.id, t]));
+        const nowMs = Date.now();
+        const ops = [];
 
         for (const [id, task] of nextById) {
             if (!prevById.has(id)) {
-                await enqueue({ type: 'set', taskId: id, doc: taskToFirestoreDoc(task, displayName), ts: Date.now() });
+                task.updatedAt = nowMs;
+                task.lastEditedBy = displayName || null;
+                (task.subtasks || []).forEach(st => { st.updatedAt = nowMs; st.lastEditedBy = displayName || null; });
+                ops.push({ type: 'set', taskId: id, doc: taskToFirestoreDoc(task, displayName), ts: nowMs });
                 continue;
             }
-            const fields = diffTaskFields(prevById.get(id), task, displayName);
-            if (fields) {
-                await enqueue({ type: 'update', taskId: id, fields, ts: Date.now() });
-            }
+            const fields = diffTaskFields(prevById.get(id), task, displayName, nowMs);
+            if (fields) ops.push({ type: 'update', taskId: id, fields, ts: nowMs });
         }
         for (const id of prevById.keys()) {
-            if (!nextById.has(id)) {
-                await enqueue({ type: 'delete', taskId: id, ts: Date.now() });
-            }
+            if (!nextById.has(id)) ops.push({ type: 'delete', taskId: id, ts: nowMs });
+        }
+
+        seedSnapshot(tasks); // baseline for the NEXT diff, now including this save's stamps
+        return ops;
+    }
+
+    /** Call AFTER STORAGE_ENGINE.put: persists+pushes the ops prepareSync() computed. */
+    async function commitSync(ops) {
+        if (!isFirebaseConfigured() || !ops || !ops.length) return;
+        for (const op of ops) {
+            await enqueue(op);
         }
     }
 
@@ -409,7 +427,133 @@ const SYNC_ENGINE = (() => {
         setInterval(() => flush(), 30000); // periodic safety-net retry
     }
 
-    return { seedSnapshot, onLocalTasksSaved, flush, scheduleFlushOnReconnect };
+    /** Firestore Timestamp | plain-ms-number | null → plain ms number | null. */
+    function toMillis(ts) {
+        if (ts == null) return null;
+        if (typeof ts === 'number') return ts;
+        if (typeof ts.toMillis === 'function') return ts.toMillis();
+        return null;
+    }
+
+    /** Converts one Firestore task document (map subtasks) into the local array shape. */
+    function firestoreDocToTask(taskId, data) {
+        const subtaskEntries = Object.entries(data.subtasks || {})
+            .sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0));
+        return {
+            id: taskId,
+            description: data.description || '',
+            datetime: data.datetime || '',
+            notes: data.notes || '',
+            responsible: data.responsible || '',
+            textColor: sanitizeTaskColor(data.textColor),
+            completed: !!data.completed,
+            actualStartTime: data.actualStartTime || null,
+            actualEndTime: data.actualEndTime || null,
+            updatedAt: toMillis(data.updatedAt),
+            lastEditedBy: data.lastEditedBy || null,
+            subtasks: subtaskEntries.map(([subId, st]) => ({
+                id: subId,
+                text: st.text || '',
+                checked: !!st.checked,
+                checkedAt: st.checkedAt || null,
+                textColor: sanitizeSubtaskColor(st.textColor),
+                updatedAt: toMillis(st.updatedAt),
+                lastEditedBy: st.lastEditedBy || null,
+            })),
+        };
+    }
+
+    /**
+     * Merges one incoming remote task into the corresponding local task.
+     * Task-level fields are taken as one group (whichever side's updatedAt
+     * is newer); subtasks are merged individually so a remote edit to one
+     * subtask never overwrites a newer local edit to a different subtask —
+     * mirroring the same per-field-path granularity the outbound side uses.
+     * A remote task with no local counterpart is accepted as-is (new task
+     * created on another device); comparisons treat a missing/pending
+     * (still-null) remote updatedAt as "older", so a device's own write
+     * echoing back before the server confirms it can never appear to
+     * revert a field that's already newer locally.
+     */
+    function mergeIncomingTask(localTask, remoteTask) {
+        if (!localTask) return remoteTask;
+        const merged = { ...localTask };
+        if ((remoteTask.updatedAt || 0) > (localTask.updatedAt || 0)) {
+            merged.description = remoteTask.description;
+            merged.datetime = remoteTask.datetime;
+            merged.notes = remoteTask.notes;
+            merged.responsible = remoteTask.responsible;
+            merged.textColor = remoteTask.textColor;
+            merged.completed = remoteTask.completed;
+            merged.actualStartTime = remoteTask.actualStartTime;
+            merged.actualEndTime = remoteTask.actualEndTime;
+            merged.updatedAt = remoteTask.updatedAt;
+            merged.lastEditedBy = remoteTask.lastEditedBy;
+        }
+
+        const localSubsById = new Map((localTask.subtasks || []).map(st => [st.id, st]));
+        const remoteSubsById = new Map((remoteTask.subtasks || []).map(st => [st.id, st]));
+        const mergedSubtasks = [];
+        for (const [subId, remoteSt] of remoteSubsById) {
+            const localSt = localSubsById.get(subId);
+            if (!localSt) { mergedSubtasks.push(remoteSt); continue; }
+            mergedSubtasks.push((remoteSt.updatedAt || 0) > (localSt.updatedAt || 0) ? remoteSt : localSt);
+        }
+        // Local-only subtasks Firestore hasn't seen yet (e.g. created while offline) are kept.
+        for (const [subId, localSt] of localSubsById) {
+            if (!remoteSubsById.has(subId)) mergedSubtasks.push(localSt);
+        }
+        merged.subtasks = mergedSubtasks;
+        return merged;
+    }
+
+    let unsubscribeSnapshot = null;
+    let getCurrentTasksFn = null;
+    let applyMergedTasksFn = null;
+    let renderDebounceTimer = null;
+
+    /**
+     * Starts (once per page load) the real-time listener on
+     * projects/{FIREBASE_SYNC_PROJECT_ID}/tasks. `getCurrentTasks()` is
+     * called synchronously whenever a remote change arrives, so merging
+     * always starts from the freshest local state; `applyMergedTasks(tasks)`
+     * is the app's callback to persist + re-render (see App.applyRemoteTasks
+     * in the HTML files — it deliberately does NOT go through saveTasks(),
+     * so applying an inbound change never re-triggers an outbound push).
+     */
+    function startListening(getCurrentTasks, applyMergedTasks) {
+        if (!isFirebaseConfigured() || unsubscribeSnapshot) return;
+        getCurrentTasksFn = getCurrentTasks;
+        applyMergedTasksFn = applyMergedTasks;
+        ensureFirebaseSignedIn().then(() => {
+            unsubscribeSnapshot = tasksCollection().onSnapshot(snapshot => {
+                // Skip this device's own optimistic (not-yet-server-confirmed) echo —
+                // its serverTimestamp() fields read as null until confirmed, so it
+                // would otherwise look "older" than what we already have locally.
+                const changes = snapshot.docChanges().filter(c => !c.doc.metadata.hasPendingWrites);
+                if (!changes.length) return;
+
+                const current = getCurrentTasksFn ? getCurrentTasksFn() : [];
+                const byId = new Map(current.map(t => [t.id, t]));
+                for (const change of changes) {
+                    const taskId = change.doc.id;
+                    if (change.type === 'removed') {
+                        byId.delete(taskId); // remote delete always wins
+                        continue;
+                    }
+                    const remoteTask = firestoreDocToTask(taskId, change.doc.data());
+                    byId.set(taskId, mergeIncomingTask(byId.get(taskId), remoteTask));
+                }
+
+                if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+                renderDebounceTimer = setTimeout(() => {
+                    if (applyMergedTasksFn) applyMergedTasksFn(Array.from(byId.values()));
+                }, 150);
+            }, err => console.warn('[SYNC] onSnapshot error:', err));
+        }).catch(err => console.warn('[SYNC] could not start listening:', err));
+    }
+
+    return { seedSnapshot, prepareSync, commitSync, flush, scheduleFlushOnReconnect, startListening };
 })();
 
 SYNC_ENGINE.scheduleFlushOnReconnect();

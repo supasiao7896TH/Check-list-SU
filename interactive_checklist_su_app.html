@@ -1918,6 +1918,7 @@ const App = {
         if (!this.settings.displayName) {
             this.openDisplayNameModal(true);
         } else {
+            SYNC_ENGINE.startListening(() => this.tasks, (merged) => this.applyRemoteTasks(merged));
             ensureFirebaseSignedIn().then(() => SYNC_ENGINE.flush()).catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
         }
     },
@@ -2185,11 +2186,15 @@ const App = {
                 actualStartTime: task.actualStartTime || null,
                 actualEndTime: task.actualEndTime || null,
                 completed: task.completed || false,
+                updatedAt: task.updatedAt || null,
+                lastEditedBy: task.lastEditedBy || null,
                 subtasks: (task.subtasks || []).map(st => ({
                     ...st,
                     checked: st.checked || false,
                     checkedAt: st.checkedAt || null,
                     textColor: sanitizeSubtaskColor(st.textColor),
+                    updatedAt: st.updatedAt || null,
+                    lastEditedBy: st.lastEditedBy || null,
                 }))
             }));
             this.sortTasks();
@@ -2208,15 +2213,35 @@ const App = {
 
     async saveTasks() {
         this.sortTasks();
+        const syncOps = SYNC_ENGINE.prepareSync(this.tasks, this.settings.displayName);
         try {
             await STORAGE_ENGINE.put('tasks', this.tasks);
         } catch (error) {
             console.error("Failed to save tasks to IndexedDB:", error);
             this.showNotification('Error: Could not save data. Storage might be full.', 'error');
         }
-        SYNC_ENGINE.onLocalTasksSaved(this.tasks, this.settings.displayName)
-            .catch(err => console.warn('[SYNC] failed to enqueue changes:', err));
+        SYNC_ENGINE.commitSync(syncOps).catch(err => console.warn('[SYNC] failed to enqueue changes:', err));
         this.checkCompletionStatus();
+    },
+
+    /**
+     * Applies a merged task list received from SYNC_ENGINE's real-time
+     * listener (another device's edit). Deliberately does NOT call
+     * saveTasks() — that would re-diff and push this same data straight
+     * back out to Firestore as if it were a new local edit.
+     */
+    async applyRemoteTasks(mergedTasks) {
+        this.tasks = mergedTasks;
+        this.sortTasks();
+        try {
+            await STORAGE_ENGINE.put('tasks', this.tasks);
+        } catch (error) {
+            console.error("Failed to save synced tasks to IndexedDB:", error);
+        }
+        SYNC_ENGINE.seedSnapshot(this.tasks); // don't re-diff/re-push what we just received
+        this.checkCompletionStatus();
+        this.render();
+        if (this.activeModal === 'dashboard') this.renderDashboard();
     },
 
     sortTasks() {
@@ -2683,6 +2708,7 @@ const App = {
         this.updateDisplayNameLabel();
         this.displayNameMandatory = false;
         this.closeActiveModal();
+        SYNC_ENGINE.startListening(() => this.tasks, (merged) => this.applyRemoteTasks(merged));
         ensureFirebaseSignedIn().then(() => SYNC_ENGINE.flush()).catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
     },
 
