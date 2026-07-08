@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Security model for Check-list-SU's real-time sync (see shared/app-core.js).
+// There is no login/password (see plan) — every client signs in anonymously
+// (Firebase Anonymous Auth) purely to obtain a stable request.auth.uid. That
+// uid is never shown in the UI; it only gates writes here and lets a device
+// prove it went through Firebase auth at all (blocking a bare curl/fetch
+// that never loaded the app). Real "who typed what" attribution is the
+// human-chosen lastEditedBy/displayName field, not the uid.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Shared checklist data — any signed-in-anonymously client may read or
+    // write. FIREBASE_SYNC_PROJECT_ID in shared/app-core.js is a routing key,
+    // not a secret, so it is not treated as an access-control boundary here.
+    match /projects/{projectId}/tasks/{taskId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Presence heartbeat docs (see SYNC_ENGINE.startPresenceHeartbeat) —
+    // anyone signed in can see who's online, but a client may only write
+    // its own presence doc.
+    match /presence/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Default deny: nothing else in this project is exposed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

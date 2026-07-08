@@ -553,7 +553,72 @@ const SYNC_ENGINE = (() => {
         }).catch(err => console.warn('[SYNC] could not start listening:', err));
     }
 
-    return { seedSnapshot, prepareSync, commitSync, flush, scheduleFlushOnReconnect, startListening };
+    const PRESENCE_HEARTBEAT_MS = 25000;
+    const PRESENCE_STALE_MS = 60000;
+    let presenceHeartbeatStarted = false;
+    let presenceUnsub = null;
+
+    /** Best-effort presence write — never queued/retried like task edits; a missed beat is harmless. */
+    async function writePresence(uid, displayName) {
+        try {
+            await firestoreDb.collection('presence').doc(uid).set({
+                displayName: displayName || null,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+        } catch (err) {
+            console.warn('[SYNC] presence heartbeat failed:', err);
+        }
+    }
+
+    /**
+     * Writes this device's presence doc immediately, then on a periodic
+     * heartbeat (only while the tab is visible) and on every tab-visible
+     * transition. `getDisplayName()` is called fresh on each beat so a
+     * later name change (Data & AI tab) is picked up automatically.
+     */
+    function startPresenceHeartbeat(getDisplayName) {
+        if (!isFirebaseConfigured() || presenceHeartbeatStarted) return;
+        presenceHeartbeatStarted = true;
+        ensureFirebaseSignedIn().then(user => {
+            if (!user) return;
+            const beat = () => writePresence(user.uid, getDisplayName());
+            beat();
+            setInterval(() => { if (document.visibilityState === 'visible') beat(); }, PRESENCE_HEARTBEAT_MS);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') beat();
+            });
+        }).catch(err => console.warn('[SYNC] presence sign-in failed:', err));
+    }
+
+    /**
+     * Subscribes to the presence collection and reports other devices seen
+     * within the last PRESENCE_STALE_MS (a doc isn't reliably deleted on
+     * disconnect, so staleness — not existence — is what "online" means
+     * here). Excludes this device's own presence doc.
+     */
+    function listenPresence(onUpdate) {
+        if (!isFirebaseConfigured() || presenceUnsub) return;
+        ensureFirebaseSignedIn().then(user => {
+            presenceUnsub = firestoreDb.collection('presence').onSnapshot(snapshot => {
+                const now = Date.now();
+                const others = [];
+                snapshot.forEach(doc => {
+                    if (user && doc.id === user.uid) return;
+                    const data = doc.data();
+                    const lastSeen = toMillis(data.lastSeen);
+                    if (lastSeen && now - lastSeen < PRESENCE_STALE_MS) {
+                        others.push({ uid: doc.id, displayName: data.displayName });
+                    }
+                });
+                onUpdate(others);
+            }, err => console.warn('[SYNC] presence listener error:', err));
+        }).catch(err => console.warn('[SYNC] presence sign-in failed:', err));
+    }
+
+    return {
+        seedSnapshot, prepareSync, commitSync, flush, scheduleFlushOnReconnect, startListening,
+        startPresenceHeartbeat, listenPresence,
+    };
 })();
 
 SYNC_ENGINE.scheduleFlushOnReconnect();

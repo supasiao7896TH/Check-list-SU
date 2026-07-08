@@ -380,6 +380,9 @@
                             สร้างรายงานสรุป
                         </button>
                     </div>
+                    <div id="onlineUsersBar" class="hidden text-center text-xs text-slate-500 mt-2">
+                        🟢 กำลังออนไลน์ร่วมกัน: <span id="onlineUsersList"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2061,6 +2064,8 @@ const App = {
             this.openDisplayNameModal(true);
         } else {
             SYNC_ENGINE.startListening(() => this.tasks, (merged) => this.applyRemoteTasks(merged));
+            SYNC_ENGINE.startPresenceHeartbeat(() => this.settings.displayName);
+            SYNC_ENGINE.listenPresence((others) => this.updateOnlineUsersBar(others));
             ensureFirebaseSignedIn().then(() => SYNC_ENGINE.flush()).catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
         }
     },
@@ -2259,6 +2264,8 @@ const App = {
             displayNameInput: document.getElementById('displayNameInput'),
             displayNameCancelBtn: document.getElementById('displayNameCancelBtn'),
             displayNameSaveBtn: document.getElementById('displayNameSaveBtn'),
+            onlineUsersBar: document.getElementById('onlineUsersBar'),
+            onlineUsersList: document.getElementById('onlineUsersList'),
             tabContainer: document.getElementById('tab-container'),
             tabButtons: document.querySelectorAll('.tab-btn'),
             tabContents: document.querySelectorAll('.tab-content'),
@@ -2922,6 +2929,8 @@ const App = {
         this.displayNameMandatory = false;
         this.closeActiveModal();
         SYNC_ENGINE.startListening(() => this.tasks, (merged) => this.applyRemoteTasks(merged));
+        SYNC_ENGINE.startPresenceHeartbeat(() => this.settings.displayName);
+        SYNC_ENGINE.listenPresence((others) => this.updateOnlineUsersBar(others));
         ensureFirebaseSignedIn().then(() => SYNC_ENGINE.flush()).catch(err => console.warn('[SYNC] anonymous sign-in failed:', err));
     },
 
@@ -2929,6 +2938,17 @@ const App = {
         if (this.dom.displayNameLabel) {
             this.dom.displayNameLabel.textContent = this.settings.displayName || '-';
         }
+    },
+
+    /** Renders the "who else is online" bar from SYNC_ENGINE's presence listener. */
+    updateOnlineUsersBar(others) {
+        if (!this.dom.onlineUsersBar) return;
+        if (!others || !others.length) {
+            this.dom.onlineUsersBar.classList.add(CSS_CLASSES.hidden);
+            return;
+        }
+        this.dom.onlineUsersBar.classList.remove(CSS_CLASSES.hidden);
+        this.dom.onlineUsersList.textContent = others.map(o => o.displayName || 'ไม่ระบุชื่อ').join(', ');
     },
 
     // ===== EVENT HANDLERS =====
