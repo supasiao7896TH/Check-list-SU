@@ -1,6 +1,6 @@
 <html lang="th"><head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://i.postimg.cc; connect-src 'self' https://generativelanguage.googleapis.com; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://i.postimg.cc; connect-src 'self' https://generativelanguage.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; base-uri 'self'; form-action 'self'">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>คู่มือปฏิบัติงานเชิงโต้ตอบ (Check list SU)</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1735,6 +1735,11 @@ The plant is currently in preparation for startup, with the following sequence o
             </div>
         </div>
     </div>
+<script>const APP_DB_NAME = 'interactive_SU_DB';</script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="./shared/app-core.js"></script>
 <script type="module">
 // --- CONFIGURATION & CONSTANTS ---
 const STORAGE_KEY = 'interactive_SU_WorkInstruction_v1';
@@ -1842,99 +1847,6 @@ const INITIAL_TASKS_JSON = `
     {"id": "su-day2-10", "datetime": "2026-09-10T23:20", "description": "Confirmation check level drum \\" LOCAL & DCS \\"", "subtasks": [{"id": "su-day2-10-s1", "text": "1. PT-101 level LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s2", "text": "2. PD-101 level DCS = 70% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s3", "text": "3. PE-101A level DCS = 50% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s4", "text": "4. PE-101B level DCS = 50% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s5", "text": "5. PE-101C level DCS = 50% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s6", "text": "6. PE-101D level DCS = 50% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s7", "text": "7. PD-301 level DCS = ....... % / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s8", "text": "8. PD-302 level DCS = 20% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s9", "text": "9. PD-303 level DCS = 23% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s10", "text": "10. PD-304 level DCS = 25% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s11", "text": "11. PD-401 level DCS = 20% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s12", "text": "12. PD-402 level DCS = 13% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s13", "text": "13. PD-405 level DCS = 15% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s14", "text": "14. PD-406 level DCS = 20% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s15", "text": "15. PD-403 level DCS = 20% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s16", "text": "16. PD-404 level DCS = 30% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s17", "text": "17. PT-401 level DCS = 40% / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "su-day2-10-s18", "text": "18. PD-450 level DCS =....... % / LOCAL ....... %", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "sub-1756978236469-18", "text": "19. PD-501 level DCS = 80% / LOCAL .......%", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "sub-1756978236469-19", "text": "20. PD-502 level DCS = 80% / LOCAL .......%", "checked": false, "textColor": "text-slate-700", "checkedAt": null}, {"id": "sub-1756978236469-20", "text": "21. PD-601 level DCS = .......% / LOCAL .......%", "checked": false, "textColor": "text-slate-700", "checkedAt": null}], "notes": "", "responsible": "", "textColor": "text-slate-800", "actualStartTime": null, "actualEndTime": null, "completed": false}
 ]
 `;
-
-/**
- * STORAGE_ENGINE — Promise-based IndexedDB key/value wrapper.
- * Ref: SKILL references/js-quality.md → STORAGE_ENGINE
- * Records are stored as { k: <key>, v: <value> } in a single object store.
- */
-const STORAGE_ENGINE = (() => {
-    'use strict';
-    const DB_NAME = 'interactive_SU_DB';
-    const DB_VERSION = 1;
-    const STORE = 'appstore';
-    let _db = null;
-
-    function _open() {
-        if (_db) return Promise.resolve(_db);
-        return new Promise((resolve, reject) => {
-            const req = indexedDB.open(DB_NAME, DB_VERSION);
-            req.onupgradeneeded = (e) => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains(STORE)) {
-                    db.createObjectStore(STORE, { keyPath: 'k' });
-                }
-            };
-            req.onsuccess = () => { _db = req.result; resolve(_db); };
-            req.onerror = () => reject(req.error);
-            req.onblocked = () => console.warn('IndexedDB upgrade blocked');
-        });
-    }
-
-    function _tx(mode, fn) {
-        return _open().then(db => new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE, mode);
-            const store = tx.objectStore(STORE);
-            let req;
-            try { req = fn(store); } catch (err) { reject(err); return; }
-            tx.oncomplete = () => resolve(req ? req.result : undefined);
-            tx.onerror = () => reject(tx.error);
-            tx.onabort = () => reject(tx.error);
-        }));
-    }
-
-    return {
-        open: _open,
-        async get(key) {
-            const rec = await _tx('readonly', s => s.get(key));
-            return rec ? rec.v : undefined;
-        },
-        put(key, value) { return _tx('readwrite', s => s.put({ k: key, v: value })); },
-        delete(key) { return _tx('readwrite', s => s.delete(key)); },
-    };
-})();
-
-/**
- * CRYPTO_VAULT — encrypts the Gemini API key with AES-GCM 256.
- * Ref: SKILL references/js-quality.md → AES-GCM API Key Vault
- * Uses a NON-EXTRACTABLE CryptoKey stored in IndexedDB, so the raw key
- * bytes can never be read back out — only used to encrypt/decrypt in-origin.
- * No passphrase required → no change to the existing UX.
- */
-const CRYPTO_VAULT = (() => {
-    'use strict';
-    const ALGO = 'AES-GCM';
-    const KEY_RECORD = 'cryptoKey';
-    const SECRET_RECORD = 'apiKeySecret';
-
-    async function _getKey() {
-        let key = await STORAGE_ENGINE.get(KEY_RECORD);
-        if (!key) {
-            key = await crypto.subtle.generateKey({ name: ALGO, length: 256 }, false, ['encrypt', 'decrypt']);
-            await STORAGE_ENGINE.put(KEY_RECORD, key);
-        }
-        return key;
-    }
-
-    return {
-        async setApiKey(plaintext) {
-            const key = await _getKey();
-            const iv = crypto.getRandomValues(new Uint8Array(12));
-            const data = await crypto.subtle.encrypt({ name: ALGO, iv }, key, new TextEncoder().encode(plaintext));
-            await STORAGE_ENGINE.put(SECRET_RECORD, { iv, data });
-        },
-        async getApiKey() {
-            const rec = await STORAGE_ENGINE.get(SECRET_RECORD);
-            if (!rec) return null;
-            const key = await _getKey();
-            const decrypted = await crypto.subtle.decrypt({ name: ALGO, iv: rec.iv }, key, rec.data);
-            return new TextDecoder().decode(decrypted);
-        },
-        async clearApiKey() {
-            await STORAGE_ENGINE.delete(SECRET_RECORD);
-        },
-    };
-})();
 
 /**
  * Main Application Object
@@ -2228,7 +2140,7 @@ const App = {
                 ...task,
                 notes: task.notes || '',
                 responsible: task.responsible || '',
-                textColor: task.textColor || 'text-slate-800',
+                textColor: sanitizeTaskColor(task.textColor),
                 actualStartTime: task.actualStartTime || null,
                 actualEndTime: task.actualEndTime || null,
                 completed: task.completed || false,
@@ -2236,6 +2148,7 @@ const App = {
                     ...st,
                     checked: st.checked || false,
                     checkedAt: st.checkedAt || null,
+                    textColor: sanitizeSubtaskColor(st.textColor),
                 }))
             }));
             this.sortTasks();
