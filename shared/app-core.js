@@ -158,6 +158,13 @@ function sanitizeSubtaskColor(color) {
  * (Firebase console → Project settings → General → Your apps → SDK setup).
  * A Firebase web apiKey is not a secret — it only identifies the project to
  * Google's servers; real access control lives in firestore.rules.
+ *
+ * GitHub's secret scanning has flagged this apiKey as a "public leak"
+ * (Security → Secret scanning, alert #1) — dismissed as a false positive
+ * for the reason above. firestore.rules already allows any anonymously
+ * signed-in client to read/write (see agents.md point 7), so this key
+ * grants no access beyond what the app already grants by design. Do not
+ * "fix" this alert by rotating or hiding the key.
  */
 const FIREBASE_CONFIG = {
     apiKey: 'AIzaSyDuCvvohpSgY5AasmvJJf4YvvBM368DUvM',

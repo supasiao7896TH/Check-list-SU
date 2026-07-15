@@ -72,6 +72,15 @@ This file is about *how to work in this codebase* safely.
    encryption — never put the plaintext PIN in a commit, and remember the
    hash itself is visible in page source to anyone who looks.
 
+8. **GitHub secret scanning will flag `FIREBASE_CONFIG.apiKey` in
+   `shared/app-core.js` as a "public leak" — this is a known false
+   positive, already dismissed.** It's a Firebase Web SDK config key, not
+   an access credential; the real access boundary is `firestore.rules`,
+   which (per point 7 above) already allows any anonymously-signed-in
+   client to read/write. Don't propose rotating or obscuring this key in
+   response to that alert — it wouldn't change what's actually exposed,
+   and this is a static site with no backend to hide it behind.
+
 ## Testing changes
 
 There's no automated test suite. To verify a change:
