@@ -2403,7 +2403,7 @@ const App = {
         const dateString = taskDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' });
         const timeString = taskDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
         
-        const descriptionClass = `text-lg font-semibold break-words ${task.textColor || 'text-slate-800'}`;
+        const descriptionClass = `text-lg font-semibold break-words ${sanitizeTaskColor(task.textColor)}`;
         
         const subtasksHTML = this.renderSubtasks(task.subtasks, task.id);
         const taskCompleteHTML = task.subtasks.length === 0 ? `
@@ -2505,7 +2505,7 @@ const App = {
             return `
             <div class="subtask-item flex items-start gap-3 p-2 hover:bg-slate-100 rounded-lg ${paddingClass}">
                 <input type="checkbox" id="${subtask.id}" data-task-id="${taskId}" data-subtask-id="${subtask.id}" class="h-5 w-5 mt-1 flex-shrink-0 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500" ${subtask.checked ? 'checked' : ''} ${disabledAttr}>
-                <label for="${subtask.id}" class="flex-1 ${subtask.textColor || 'text-slate-700'}">${this.escapeHTML(subtask.text.replace(/^[\s]*[\-\*]\s/, ''))}</label>
+                <label for="${subtask.id}" class="flex-1 ${sanitizeSubtaskColor(subtask.textColor)}">${this.escapeHTML(subtask.text.replace(/^[\s]*[\-\*]\s/, ''))}</label>
             </div>
             `;
         }).join('');
