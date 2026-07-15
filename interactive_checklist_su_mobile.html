@@ -2633,7 +2633,7 @@ const App = {
         const dateString = taskDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' });
         const timeString = taskDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
-        const descColor = task.textColor || 'text-slate-800';
+        const descColor = sanitizeTaskColor(task.textColor);
         const subtasksHTML = this.renderSubtasks(task.subtasks, task.id);
         const taskCompleteHTML = task.subtasks.length === 0 ? `
             <div class="m-sub">
@@ -2718,7 +2718,7 @@ const App = {
             return `
             <div class="m-sub ${indentClass}">
                 <input type="checkbox" id="${subtask.id}" data-task-id="${taskId}" data-subtask-id="${subtask.id}" class="m-cbx" ${subtask.checked ? 'checked' : ''} ${disabledAttr}>
-                <label for="${subtask.id}" class="m-sublabel ${subtask.textColor || ''}">${this.escapeHTML(subtask.text.replace(/^[\s]*[\-\*]\s/, ''))}</label>
+                <label for="${subtask.id}" class="m-sublabel ${sanitizeSubtaskColor(subtask.textColor)}">${this.escapeHTML(subtask.text.replace(/^[\s]*[\-\*]\s/, ''))}</label>
             </div>
             `;
         }).join('');
