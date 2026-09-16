@@ -15,10 +15,15 @@ This file is about *how to work in this codebase* safely.
    desktop build ended up missing a bug fix the mobile build got
    (commit `539c8dc`).
 
-2. **Never write the Gemini API key, or anything from `CRYPTO_VAULT`, to
-   Firestore.** It's local-only by design. If you touch `SYNC_ENGINE` or
-   the outbound/inbound sync payloads, double-check this invariant still
-   holds.
+2. **This app has no Gemini/AI dependency anymore (removed 2569-09-16, see
+   `context.md` → "AI removed").** `CRYPTO_VAULT` and `callGemini()` are
+   gone from `shared/app-core.js` and both HTML files. Do not add a
+   Gemini or any other AI API call back in without asking the user first
+   — they explicitly asked to drop it over API-key cost/quota risk, and
+   this applies even if it looks like the convenient way to implement a
+   requested feature. If a "smart summary" feature is requested, build it
+   as a plain string template from existing data instead (see
+   `buildHandoverReport`/`buildShutdownReport` for the pattern).
 
 3. **No build step exists on purpose.** Don't introduce npm, a bundler,
    or ES module imports across files. New shared code should be a plain
@@ -60,9 +65,13 @@ This file is about *how to work in this codebase* safely.
 
 7. **The viewer/admin PIN gate is UI-only — do not treat it as real access
    control.** `App.isEditingAllowed()` (each HTML file, reads
-   `settings.adminUnlocked`) gates every mutating handler and hides/disables
-   the corresponding controls, but `firestore.rules` still allows any
-   anonymously-signed-in client to write. Anyone who opens devtools and
+   `settings.adminUnlocked`) gates every mutating handler except
+   `handleSubtaskChange` and hides/disables the corresponding controls, but
+   `firestore.rules` still allows any anonymously-signed-in client to write.
+   **Checkbox toggling is a deliberate exception to the gate** (see
+   `context.md` → "Access control") — do not add an `isEditingAllowed()`
+   check back into `handleSubtaskChange` or re-add `disabled` to a subtask
+   checkbox without asking the user first. Anyone who opens devtools and
    calls the already-loaded Firebase SDK directly (or hits the Firestore
    REST API using the non-secret `FIREBASE_CONFIG`) bypasses this entirely.
    If you ever need this enforced for real, that requires distinguishing

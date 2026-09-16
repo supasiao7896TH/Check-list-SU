@@ -1,6 +1,6 @@
 <html lang="th"><head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://i.postimg.cc; connect-src 'self' https://generativelanguage.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://i.postimg.cc; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; base-uri 'self'; form-action 'self'">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>คู่มือปฏิบัติงานเชิงโต้ตอบ (Check list SU)</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -320,11 +320,6 @@
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-2">
                         <label for="taskNotes" class="block text-sm font-medium">บันทึกเพิ่มเติม (Notes):</label>
-                        <button type="button" id="analyzeNoteBtn" class="text-sm bg-purple-100 text-purple-700 font-semibold py-1 px-3 rounded-full flex items-center gap-2 hover:bg-purple-200 transition-colors disabled:opacity-50 disabled:cursor-wait" title="ใช้ AI เพื่อวิเคราะห์บันทึกและให้คำแนะนำ">
-                            <span id="analyzeBtnSpinner" class="spinner hidden"></span>
-                            <svg id="analyzeBtnIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 2.5a.5.5 0 011 0V5h2.5a.5.5 0 010 1H6v2.5a.5.5 0 01-1 0V6H2.5a.5.5 0 010-1H5V2.5zM10 6a.5.5 0 01.5.5v2.5h2.5a.5.5 0 010 1h-2.5v2.5a.5.5 0 01-1 0v-2.5H7.5a.5.5 0 010-1H10V6.5A.5.5 0 0110 6zM15 9.5a.5.5 0 011 0V12h2.5a.5.5 0 010 1H16v2.5a.5.5 0 01-1 0V13h-2.5a.5.5 0 010-1H15V9.5z" clip-rule="evenodd"></path></svg>
-                            <span id="analyzeBtnText">วิเคราะห์โดย AI</span>
-                        </button>
                     </div>
                     <textarea id="taskNotes" placeholder="บันทึกปัญหาที่พบ หรือรายละเอียดเพิ่มเติม" rows="4" class="shadow-sm appearance-none border rounded-xl w-full py-2.5 px-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white border-slate-300"></textarea>
                 </div>
@@ -957,19 +952,6 @@ The plant is currently in preparation for startup, with the following sequence o
         </div>
     </div>
 
-    <!-- API Key Modal -->
-    <div id="apiKeyModalBackdrop" class="modal-backdrop bg-black/30 fixed inset-0 z-40 backdrop-blur-sm hidden"></div>
-    <div id="apiKeyModal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle" class="modal bg-slate-50 rounded-3xl shadow-2xl w-11/12 md:w-1/3 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 border hidden">
-        <div class="p-8 text-center">
-            <h3 id="apiKeyModalTitle" class="text-xl font-bold mt-4">ป้อน Gemini API Key</h3>
-            <p class="text-slate-500 mt-2 mb-6">กรุณาใส่ API Key เพื่อใช้งานฟังก์ชัน AI (Key จะถูกจัดเก็บอย่างปลอดภัยในเบราว์เซอร์ของคุณ)</p>
-            <input type="password" id="apiKeyInput" class="w-full text-center border rounded-xl p-2 bg-white border-slate-300" placeholder="วาง API Key ที่นี่">
-            <div class="flex items-center justify-center gap-4 mt-6">
-                <button id="apiKeyCancelBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2.5 px-6 rounded-full transition-colors">ยกเลิก</button>
-                <button id="apiKeySaveBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-full transition-colors">บันทึก Key</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Display Name Modal (identity for real-time multi-device sync) -->
     <div id="displayNameModalBackdrop" class="modal-backdrop bg-black/30 fixed inset-0 z-40 backdrop-blur-sm hidden"></div>
@@ -1600,17 +1582,6 @@ The plant is currently in preparation for startup, with the following sequence o
                     </div>
                 </div>
                 
-                <div class="mt-6 bg-white p-6 rounded-2xl border">
-                    <div class="flex justify-between items-center mb-4">
-                         <h2 class="text-xl font-bold">AI Project Analyst</h2>
-                         <button id="analyzeProjectBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-wait">
-                            <span id="analyzeProjectBtnSpinner" class="spinner hidden"></span>
-                            <svg id="analyzeProjectBtnIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 2.5a.5.5 0 011 0V5h2.5a.5.5 0 010 1H6v2.5a.5.5 0 01-1 0V6H2.5a.5.5 0 010-1H5V2.5zM10 6a.5.5 0 01.5.5v2.5h2.5a.5.5 0 010 1h-2.5v2.5a.5.5 0 01-1 0v-2.5H7.5a.5.5 0 010-1H10V6.5A.5.5 0 0110 6zM15 9.5a.5.5 0 011 0V12h2.5a.5.5 0 010 1H16v2.5a.5.5 0 01-1 0V13h-2.5a.5.5 0 010-1H15V9.5z" clip-rule="evenodd"></path></svg>
-                            <span id="analyzeProjectBtnText">วิเคราะห์ภาพรวมโดย AI</span>
-                        </button>
-                    </div>
-                    <div id="ai-analysis-result" class="p-4 bg-slate-50 rounded-lg min-h-[100px] border"><p class="text-slate-500 italic">กดปุ่มเพื่อรับบทวิเคราะห์ภาพรวมโปรเจกต์จาก AI</p></div>
-                </div>
             </div>
 
             <!-- NEW: Kanban Board Content -->
@@ -1783,13 +1754,10 @@ The plant is currently in preparation for startup, with the following sequence o
 // --- CONFIGURATION & CONSTANTS ---
 const STORAGE_KEY = 'interactive_SU_WorkInstruction_v1';
 const SETTINGS_KEY = 'interactiveWorkInstruction_settings_SU_v1';
-const API_KEY_STORAGE_KEY = 'interactiveWorkInstruction_apiKey_SU_v1';
 const NOTIFICATION_LEAD_TIME_MINUTES = 5;
 const AUTO_SCROLL_DELAY_MS = 60000; // 1 minute delay for auto-scrolling
 const IDLE_SCROLL_DELAY_MS = 20000; // 20 seconds for idle scroll
 const SEARCH_DEBOUNCE_MS = 300; // Wait for typing pause before re-rendering search
-const GEMINI_MAX_CALLS_PER_MINUTE = 10; // Client-side rate limit for AI calls
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute window for rate limiter
 const NOTIFICATION_DISPLAY_MS = 3500; // How long a toast stays before fading out
 const NOTIFICATION_FADE_MS = 400;     // Fade-out duration before removal
 const NOTIFICATION_MAX_AGE_MS = 8000; // Hard sweep: any toast older than this is force-removed
@@ -1797,27 +1765,6 @@ const APP_BUILD = '2026-06-04.2';     // Visible build tag to confirm running ve
 const CSS_CLASSES = {
     hidden: 'hidden',
 };
-
-/**
- * Client-side rate limiter — limits calls within a sliding time window.
- * Ref: SKILL references/js-quality.md → createRateLimiter
- * @param {number} maxCalls - Maximum allowed calls within the window
- * @param {number} windowMs - Window size in milliseconds
- * @returns {{canCall: function(): boolean, record: function(): void}}
- */
-function createRateLimiter(maxCalls, windowMs) {
-    const calls = [];
-    return {
-        canCall() {
-            const now = Date.now();
-            while (calls.length && calls[0] < now - windowMs) calls.shift();
-            return calls.length < maxCalls;
-        },
-        record() {
-            calls.push(Date.now());
-        },
-    };
-}
 
 /**
  * Debounce — delays invoking fn until `delay` ms have elapsed since last call.
@@ -1833,9 +1780,6 @@ function debounce(fn, delay) {
         timer = setTimeout(() => fn(...args), delay);
     };
 }
-
-// Shared rate limiter instance for all Gemini AI calls
-const geminiRateLimiter = createRateLimiter(GEMINI_MAX_CALLS_PER_MINUTE, RATE_LIMIT_WINDOW_MS);
 
 // --- INITIAL DATA ---
 // NOTE: The dates will be dynamically replaced to today and tomorrow
@@ -1900,7 +1844,6 @@ const App = {
     notifiedTaskIds: [],
     overdueNotificationState: {},
     highlightedTaskId: null,
-    apiKey: null,
     settings: {
         soundEnabled: true,
         displayName: null,
@@ -1926,7 +1869,6 @@ const App = {
             console.error("IndexedDB unavailable, running with defaults:", error);
         }
         await this.loadSettings();
-        await this.loadApiKey();
         this.loadVoices();
         this.bindEvents();
         await this.loadTasks();
@@ -1980,14 +1922,6 @@ const App = {
             if (oldSettings) await STORAGE_ENGINE.put('settings', JSON.parse(oldSettings));
         } catch (e) { console.error("Settings migration failed:", e); }
 
-        try {
-            const oldKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-            if (oldKey) {
-                await CRYPTO_VAULT.setApiKey(oldKey);
-                localStorage.removeItem(API_KEY_STORAGE_KEY); // remove plaintext secret
-            }
-        } catch (e) { console.error("API key migration failed:", e); }
-
         await STORAGE_ENGINE.put('_migrated', true);
     },
 
@@ -2013,10 +1947,6 @@ const App = {
             taskTextColorInput: document.getElementById('taskTextColor'),
             taskNotesInput: document.getElementById('taskNotes'),
             taskResponsibleInput: document.getElementById('taskResponsible'),
-            analyzeNoteBtn: document.getElementById('analyzeNoteBtn'),
-            analyzeBtnSpinner: document.getElementById('analyzeBtnSpinner'),
-            analyzeBtnIcon: document.getElementById('analyzeBtnIcon'),
-            analyzeBtnText: document.getElementById('analyzeBtnText'),
             rescheduleContainer: document.getElementById('rescheduleContainer'),
             rescheduleCheckbox: document.getElementById('rescheduleCheckbox'),
             subtaskListEditor: document.getElementById('subtaskListEditor'),
@@ -2046,11 +1976,6 @@ const App = {
             exportHtmlBtn: document.getElementById('exportHtmlBtn'),
             generateReportBtn: document.getElementById('generateReportBtn'),
             handoverTitle: document.getElementById('handoverTitle'),
-            apiKeyModalBackdrop: document.getElementById('apiKeyModalBackdrop'),
-            apiKeyModal: document.getElementById('apiKeyModal'),
-            apiKeyInput: document.getElementById('apiKeyInput'),
-            apiKeyCancelBtn: document.getElementById('apiKeyCancelBtn'),
-            apiKeySaveBtn: document.getElementById('apiKeySaveBtn'),
             displayNameBtn: document.getElementById('displayNameBtn'),
             displayNameLabel: document.getElementById('displayNameLabel'),
             displayNameModalBackdrop: document.getElementById('displayNameModalBackdrop'),
@@ -2089,12 +2014,7 @@ const App = {
             timePerformanceOnTimeEl: document.getElementById('time-performance-on-time'),
             timePerformanceDelayedEl: document.getElementById('time-performance-delayed'),
             timePerformanceOverdueEl: document.getElementById('time-performance-overdue'),
-            analyzeProjectBtn: document.getElementById('analyzeProjectBtn'),
-            analyzeProjectBtnSpinner: document.getElementById('analyzeProjectBtnSpinner'),
-            analyzeProjectBtnIcon: document.getElementById('analyzeProjectBtnIcon'),
-            analyzeProjectBtnText: document.getElementById('analyzeProjectBtnText'),
-            aiAnalysisResultEl: document.getElementById('ai-analysis-result'),
-            
+
             // Kanban DOM Elements
             dashboardTabContainer: document.getElementById('dashboardTabContainer'),
             dashboardTabContents: document.querySelectorAll('.dashboard-tab-content'),
@@ -2128,16 +2048,12 @@ const App = {
         this.debouncedRender = debounce(() => this.render(), SEARCH_DEBOUNCE_MS);
         this.dom.searchInput.addEventListener('input', this.handleSearchInput.bind(this));
         this.dom.filterContainer.addEventListener('click', this.handleFilterClick.bind(this));
-        this.dom.analyzeNoteBtn.addEventListener('click', this.handleAnalyzeNote.bind(this));
         this.dom.generateHandoverBtn.addEventListener('click', (e) => this.handleGenerateHandover(e));
         this.dom.closeHandoverBtn.addEventListener('click', this.closeHandoverModal.bind(this));
         this.dom.handoverModalBackdrop.addEventListener('click', this.closeHandoverModal.bind(this));
         this.dom.copyHandoverBtn.addEventListener('click', this.handleCopySummary.bind(this));
         this.dom.exportHtmlBtn.addEventListener('click', this.handleExportHTML.bind(this));
         this.dom.generateReportBtn.addEventListener('click', (e) => this.handleGenerateReport(e));
-        this.dom.apiKeyCancelBtn.addEventListener('click', this.closeApiKeyModal.bind(this));
-        this.dom.apiKeySaveBtn.addEventListener('click', this.handleApiKeySubmit.bind(this));
-        this.dom.apiKeyModalBackdrop.addEventListener('click', this.closeApiKeyModal.bind(this));
         this.dom.displayNameBtn.addEventListener('click', (e) => this.openDisplayNameModal(false, e.currentTarget));
         this.dom.displayNameCancelBtn.addEventListener('click', this.closeDisplayNameModal.bind(this));
         this.dom.displayNameSaveBtn.addEventListener('click', this.handleDisplayNameSubmit.bind(this));
@@ -2158,7 +2074,6 @@ const App = {
         this.dom.showDashboardBtn.addEventListener('click', (e) => this.openDashboardModal(e.currentTarget));
         this.dom.closeDashboardBtn.addEventListener('click', () => this.closeActiveModal());
         this.dom.dashboardModalBackdrop.addEventListener('click', () => this.closeActiveModal());
-        this.dom.analyzeProjectBtn.addEventListener('click', (e) => this.handleAnalyzeProject(e));
         this.dom.dashboardTabContainer.addEventListener('click', this.handleDashboardTabClick.bind(this));
 
         // Kanban card click → open edit modal
@@ -2410,7 +2325,7 @@ const App = {
             <div class="subtask-item flex items-start gap-3 p-2 hover:bg-slate-100 rounded-lg">
                 <input type="checkbox" id="task-complete-${task.id}" data-task-id="${task.id}" data-task-complete="true"
                     class="h-5 w-5 mt-1 flex-shrink-0 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500"
-                    ${task.completed ? 'checked' : ''} ${this.isEditingAllowed() ? '' : 'disabled'}>
+                    ${task.completed ? 'checked' : ''}>
                 <label for="task-complete-${task.id}" class="flex-1 text-slate-700 font-medium">เสร็จสิ้นงานนี้</label>
             </div>` : '';
 
@@ -2498,13 +2413,12 @@ const App = {
     },
 
     renderSubtasks(subtasks, taskId) {
-        const disabledAttr = this.isEditingAllowed() ? '' : 'disabled';
         return subtasks.map(subtask => {
             const isSubItem = subtask.text.trim().startsWith('-');
             const paddingClass = isSubItem ? 'pl-6' : '';
             return `
             <div class="subtask-item flex items-start gap-3 p-2 hover:bg-slate-100 rounded-lg ${paddingClass}">
-                <input type="checkbox" id="${subtask.id}" data-task-id="${taskId}" data-subtask-id="${subtask.id}" class="h-5 w-5 mt-1 flex-shrink-0 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500" ${subtask.checked ? 'checked' : ''} ${disabledAttr}>
+                <input type="checkbox" id="${subtask.id}" data-task-id="${taskId}" data-subtask-id="${subtask.id}" class="h-5 w-5 mt-1 flex-shrink-0 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500" ${subtask.checked ? 'checked' : ''}>
                 <label for="${subtask.id}" class="flex-1 ${sanitizeSubtaskColor(subtask.textColor)}">${this.escapeHTML(subtask.text.replace(/^[\s]*[\-\*]\s/, ''))}</label>
             </div>
             `;
@@ -2556,7 +2470,7 @@ const App = {
         });
 
         if (this.highlightedTaskId) {
-            const el = this.dom.taskListEl.querySelector(`.task-card[data-task-id="${this.highlightedTaskId}"]`);
+            const el = this.dom.taskListEl.querySelector(`.task-card[data-task-id="${CSS.escape(this.highlightedTaskId)}"]`);
             const task = this.tasks.find(t => t.id === this.highlightedTaskId);
 
             if (el && task) {
@@ -2576,7 +2490,7 @@ const App = {
 
     triggerAutoScroll() {
         if (this.highlightedTaskId) {
-            const el = this.dom.taskListEl.querySelector(`.task-card[data-task-id="${this.highlightedTaskId}"]`);
+            const el = this.dom.taskListEl.querySelector(`.task-card[data-task-id="${CSS.escape(this.highlightedTaskId)}"]`);
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
@@ -2714,16 +2628,6 @@ const App = {
 
     closeHandoverModal() { this.closeActiveModal(); },
 
-    openApiKeyModal(openerElement) {
-        // MODIFIED: Close dashboard if it's open before opening API key modal
-        if (this.activeModal === 'dashboard') {
-            this.closeActiveModal();
-        }
-        this.openModal('apiKey', openerElement);
-    },
-
-    closeApiKeyModal() { this.closeActiveModal(); },
-
     /**
      * Display-name modal — the app's only "identity" mechanism (no login,
      * no password). `mandatory` blocks dismissal until a name is entered;
@@ -2857,18 +2761,6 @@ const App = {
             this.triggerAutoScroll();
             this.idleTimer = null;
         }, delay);
-    },
-
-    async handleApiKeySubmit() {
-        const key = this.dom.apiKeyInput.value.trim();
-        if (key) {
-            this.apiKey = key;
-            await this.saveApiKey();
-            this.closeApiKeyModal();
-            this.showNotification('API Key saved. Please try the AI feature again.', 'success');
-        } else {
-            this.showNotification('Invalid API Key.', 'error');
-        }
     },
 
     handleEditFormSubmit(e) {
@@ -3038,11 +2930,6 @@ const App = {
     handleSubtaskChange(e) {
         const input = e.target;
         if (input.matches('input[type="checkbox"]')) {
-            if (!this.isEditingAllowed()) {
-                input.checked = !input.checked; // revert any UI change that slipped through
-                this.showNotification('โหมดดูอย่างเดียว: กรุณาปลดล็อกด้วยรหัส PIN ก่อนแก้ไขข้อมูล', 'error');
-                return;
-            }
             if (input.dataset.taskComplete) {
                 const taskId = input.dataset.taskId;
                 const task = this.tasks.find(t => t.id === taskId);
@@ -3185,82 +3072,85 @@ const App = {
     },
 
     // ===== AI HANDLERS =====
-    async handleAnalyzeNote(e) {
-        const noteText = this.dom.taskNotesInput.value.trim();
-        if (!noteText) {
-            this.showNotification('Please enter a note before starting the analysis.', 'error');
-            return;
-        }
-
-        const prompt = `Act as a senior petrochemical plant maintenance specialist. Analyze the following operational note: "${noteText}". Provide a concise summary of the issue, suggest 2-3 initial troubleshooting steps, and assess potential risks. Respond in clear, professional Thai.`;
-        
-        this.toggleAnalyzeButtonLoading(true);
-        try {
-            const result = await this.callGemini(prompt, e.currentTarget);
-            this.dom.taskNotesInput.value = result;
-            this.showNotification('Analysis complete.', 'success');
-        } catch (error) {
-            console.error("AI analysis failed:", error.message);
-        } finally {
-            this.toggleAnalyzeButtonLoading(false);
-        }
-    },
-
-    async handleGenerateHandover(e) {
-        this.showNotification('Generating handover report...', 'info');
+    // Splits tasks into completed/pending using each report's own "done"
+    // definition (kept identical to the original AI-prompt logic so
+    // template output matches what the AI version used to report).
+    _splitTasksForReport(onlyStarted) {
         const now = new Date();
-        const completedTasks = this.tasks.filter(t => {
-            const { progress } = this.calculateProgress(t);
-            return new Date(t.datetime) < now && progress >= 1;
-        });
-
-        const pendingTasks = this.tasks.filter(t => {
-            const { progress } = this.calculateProgress(t);
-            return progress < 1;
-        });
-
-        const issues = this.tasks.filter(t => t.notes && t.notes.trim() !== '').map(t => `- ${t.description}: ${t.notes.trim()} (PIC: ${t.responsible || 'N/A'})`).join('\n');
-
-        const prompt = `As a Shift Leader in a petrochemical plant, generate a concise Shift Handover Report based on the following data. Use clear, technical language.
-        - Report Time: ${now.toUTCString()}
-        - Completed Activities: ${completedTasks.length > 0 ? completedTasks.map(t => t.description).join('; ') : 'None'}
-        - Pending Items & Look-ahead: ${pendingTasks.length > 0 ? pendingTasks.map(t => t.description).join('; ') : 'None'}
-        - Issues / Remarks: ${issues || 'No major issues.'}
-        
-        Format the output clearly with sections: "Shift Handover Report", "1. Completed Activities", "2. Pending Items & Look-ahead", "3. Issues / Remarks".`;
-
-        try {
-            const result = await this.callGemini(prompt, e.currentTarget);
-            this.dom.handoverContent.innerHTML = `<pre class="whitespace-pre-wrap text-sm">${this.escapeHTML(result)}</pre>`;
-            this.openHandoverModal("Shift Handover Report", e.currentTarget);
-        } catch (error) {
-            console.error("Handover generation failed:", error.message);
-        }
+        const source = onlyStarted ? this.tasks.filter(t => new Date(t.datetime) < now) : this.tasks;
+        return {
+            completedTasks: source.filter(t => this.calculateProgress(t).progress >= 1),
+            pendingTasks: source.filter(t => this.calculateProgress(t).progress < 1),
+        };
     },
 
+    _formatIssuesList() {
+        const issues = this.tasks.filter(t => t.notes && t.notes.trim() !== '');
+        if (issues.length === 0) return '   None reported.';
+        return issues.map(t => `   - ${t.description}: ${t.notes.trim()} (PIC: ${t.responsible || 'N/A'})`).join('\n');
+    },
 
-    async handleGenerateReport(e) {
-        this.showNotification('Generating final report...', 'info');
+    buildHandoverReport({ now, completedTasks, pendingTasks, issuesText }) {
+        const completedList = completedTasks.length > 0 ? completedTasks.map(t => `   - ${t.description}`).join('\n') : '   None';
+        const pendingList = pendingTasks.length > 0 ? pendingTasks.map(t => `   - ${t.description}`).join('\n') : '   None';
+        return `=== SHIFT HANDOVER REPORT ===
+Report Time: ${now.toUTCString()}
+
+1. COMPLETED ACTIVITIES (${completedTasks.length})
+${completedList}
+
+2. PENDING ITEMS & LOOK-AHEAD (${pendingTasks.length})
+${pendingList}
+
+3. ISSUES / REMARKS
+${issuesText}
+
+--- Generated automatically from checklist data (no AI) ---`;
+    },
+
+    handleGenerateHandover(e) {
+        const now = new Date();
+        const { completedTasks, pendingTasks } = this._splitTasksForReport(true);
+        const result = this.buildHandoverReport({ now, completedTasks, pendingTasks, issuesText: this._formatIssuesList() });
+        this.dom.handoverContent.innerHTML = `<pre class="whitespace-pre-wrap text-sm">${this.escapeHTML(result)}</pre>`;
+        this.openHandoverModal("Shift Handover Report", e.currentTarget);
+    },
+
+    buildShutdownReport({ startTime, endTime, duration, completedTasks, pendingTasks, issuesText, totalTasks }) {
+        const percentage = totalTasks > 0 ? ((completedTasks.length / totalTasks) * 100).toFixed(1) : '0.0';
+        const completedList = completedTasks.length > 0 ? completedTasks.map(t => t.description).join('; ') : 'None';
+        const pendingList = pendingTasks.length > 0 ? pendingTasks.map(t => t.description).join('; ') : 'None';
+        return `=== POST START-UP REPORT ===
+Start Time: ${startTime.toUTCString()}
+End Time: ${endTime.toUTCString()}
+Total Duration: ${duration} hours
+
+1. EXECUTIVE SUMMARY
+   Start-up started at ${startTime.toLocaleTimeString('en-US')} and completed at ${endTime.toLocaleTimeString('en-US')}, totaling ${duration} hours.
+   ${completedTasks.length} of ${totalTasks} tasks completed (${percentage}%).
+
+2. KEY ACTIVITIES OVERVIEW
+   Completed (${completedTasks.length}): ${completedList}
+   Pending/Incomplete (${pendingTasks.length}): ${pendingList}
+
+3. ISSUES & CORRECTIVE ACTIONS
+${issuesText}
+
+4. RECOMMENDATIONS
+   [To be filled in by the shift supervisor]
+
+--- Generated automatically from checklist data (no AI) ---`;
+    },
+
+    handleGenerateReport(e) {
         const startTime = this.tasks.length > 0 ? new Date(this.tasks[0].datetime) : new Date();
         const endTime = new Date();
         const duration = ((endTime - startTime) / (1000 * 60 * 60)).toFixed(2); // Duration in hours
-        const issues = this.tasks.filter(t => t.notes && t.notes.trim() !== '').map(t => `- ${t.description}: ${t.notes.trim()} (PIC: ${t.responsible || 'N/A'})`).join('\n');
+        const { completedTasks, pendingTasks } = this._splitTasksForReport(false);
 
-        const prompt = `As a Plant Manager, generate a formal Post Start-Up Report. Be concise and professional.
-        - Start Time: ${startTime.toUTCString()}
-        - End Time: ${endTime.toUTCString()}
-        - Total Duration: ${duration} hours
-        - Key Issues & Corrective Actions: ${issues || 'No major operational issues were recorded.'}
-        
-        Structure the report with these sections: "Post Start-Up Report", "1. Executive Summary", "2. Key Activities Overview", "3. Issues & Corrective Actions", "4. Recommendations". Provide a brief, plausible summary and recommendations based on the data.`;
-
-        try {
-            const result = await this.callGemini(prompt, e.currentTarget);
-            this.dom.handoverContent.innerHTML = `<pre class="whitespace-pre-wrap text-sm">${this.escapeHTML(result)}</pre>`;
-            this.openHandoverModal("Post Start-Up Report", e.currentTarget);
-        } catch (error) {
-            console.error("Report generation failed:", error.message);
-        }
+        const result = this.buildShutdownReport({ startTime, endTime, duration, completedTasks, pendingTasks, issuesText: this._formatIssuesList(), totalTasks: this.tasks.length });
+        this.dom.handoverContent.innerHTML = `<pre class="whitespace-pre-wrap text-sm">${this.escapeHTML(result)}</pre>`;
+        this.openHandoverModal("Post Start-Up Report", e.currentTarget);
     },
 
     handleCopySummary() {
@@ -3322,13 +3212,6 @@ const App = {
         this.showNotification('Application exported successfully!', 'success');
     },
 
-    toggleAnalyzeButtonLoading(isLoading) {
-        this.dom.analyzeNoteBtn.disabled = isLoading;
-        this.dom.analyzeBtnSpinner.classList.toggle('hidden', !isLoading);
-        this.dom.analyzeBtnIcon.classList.toggle('hidden', isLoading);
-        this.dom.analyzeBtnText.textContent = isLoading ? 'วิเคราะห์...' : 'วิเคราะห์โดย AI';
-    },
-
     checkCompletionStatus() {
         const allTasksDone = this.tasks.length > 0 && this.tasks.every(task => {
             const { progress } = this.calculateProgress(task);
@@ -3338,67 +3221,6 @@ const App = {
     },
 
     // ===== UTILITY FUNCTIONS =====
-    async callGemini(prompt, openerElement) {
-        if (!this.apiKey) {
-            this.showNotification('Please enter an API Key to use AI features.', 'error');
-            this.openApiKeyModal(openerElement);
-            throw new Error('API_KEY_MISSING');
-        }
-
-        if (!geminiRateLimiter.canCall()) {
-            this.showNotification('AI กำลังยุ่ง — กรุณารอสักครู่', 'error');
-            throw new Error('AI_RATE_LIMIT');
-        }
-        geminiRateLimiter.record();
-
-        const maxRetries = 3;
-        let delay = 1000;
-
-        for (let i = 0; i < maxRetries; i++) {
-            try {
-                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorBodyText = await response.text();
-                    console.error("API Error Body:", errorBodyText);
-                     if (response.status === 400 || response.status === 403) {
-                         this.showNotification('Invalid API Key or permission denied.', 'error');
-                         this.openApiKeyModal(openerElement);
-                         throw new Error(`Invalid API Key. Status: ${response.status}`);
-                     }
-                    if (response.status === 429) throw new Error('Rate limited');
-                    throw new Error(`API call failed with status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    return result.candidates[0].content.parts[0].text;
-                } else {
-                    throw new Error("Invalid response structure from AI.");
-                }
-            } catch (error) {
-                console.warn(`Attempt ${i + 1} failed: ${error.message}`);
-                if (i === maxRetries - 1 || error.message.includes('Invalid API Key')) {
-                    this.showNotification('AI connection failed.', 'error');
-                    if (!this.activeModal) {
-                        this.openApiKeyModal(openerElement);
-                    }
-                    throw error;
-                }
-                await new Promise(resolve => setTimeout(resolve, delay));
-                delay *= 2;
-            }
-        }
-    },
-
     async loadSettings() {
         try {
             const stored = await STORAGE_ENGINE.get('settings');
@@ -3427,26 +3249,6 @@ const App = {
         }
     },
 
-    async loadApiKey() {
-        try {
-            this.apiKey = await CRYPTO_VAULT.getApiKey();
-        } catch (error) {
-            console.error("Error loading API key:", error);
-            this.apiKey = null;
-        }
-    },
-
-    async saveApiKey() {
-        try {
-            if (this.apiKey) {
-                await CRYPTO_VAULT.setApiKey(this.apiKey);
-            } else {
-                await CRYPTO_VAULT.clearApiKey();
-            }
-        } catch (error) {
-            console.error("Failed to save API key:", error);
-        }
-    },
     
     escapeHTML(str) {
         const p = document.createElement('p');
@@ -3564,7 +3366,6 @@ const App = {
 
     // ===== DASHBOARD FUNCTIONS =====
     openDashboardModal(openerElement) {
-        this.dom.aiAnalysisResultEl.innerHTML = `<p class="text-slate-500 italic">กดปุ่มเพื่อรับบทวิเคราะห์ภาพรวมโปรเจกต์จาก AI</p>`;
         this.openModal('dashboard', openerElement);
         this.setActiveDashboardTab('overview');
         this.renderDashboard();
@@ -3807,61 +3608,6 @@ const App = {
         }
     },
     
-    async handleAnalyzeProject(e) {
-        this.toggleProjectAnalyzeButtonLoading(true);
-        this.dom.aiAnalysisResultEl.innerHTML = '<p class="text-slate-500 italic">กำลังรวบรวมข้อมูลและส่งให้ AI วิเคราะห์...</p>';
-
-        try {
-            const dashboardMetrics = this.calculateDashboardMetrics();
-            const timeMetrics = this.calculateTimePerformanceMetrics();
-            const workloadMetrics = this.calculateWorkloadMetrics();
-            const issues = this.tasks
-                .filter(task => {
-                    const { progress } = this.calculateProgress(task);
-                    return progress < 1 && task.notes && task.notes.trim() !== '';
-                })
-                .map(task => `- Task "${task.description}": ${task.notes.trim()} (PIC: ${task.responsible || 'N/A'})`)
-                .join('\n');
-
-            const prompt = `
-                Act as an expert Petrochemical Plant Start-Up Manager. Analyze the following real-time project status data and provide a concise, professional summary in Thai.
-                
-                **Current Project Data:**
-                - Overall Progress: ${dashboardMetrics.overallProgress}%
-                - Task Status: ${dashboardMetrics.statusCounts.pending} Pending, ${dashboardMetrics.statusCounts.in_progress} In-Progress, ${dashboardMetrics.statusCounts.done} Done.
-                - Time Performance (for completed tasks): ${timeMetrics.onTimeCount} tasks finished on time, ${timeMetrics.delayedCount} tasks were delayed. Average completion time is ${timeMetrics.averageTime} minutes. There are currently ${timeMetrics.overdueCount} overdue tasks.
-                - Current Workload: ${workloadMetrics.labels.map((label, index) => `${label} has ${workloadMetrics.data[index]} task(s)`).join(', ')}.
-                - Open Issues from Notes:
-                ${issues || 'No specific issues noted in pending tasks.'}
-
-                **Your Task:**
-                Based on all the data above, provide a brief analysis.
-                1.  Start with a clear, one-sentence summary of the overall project status (e.g., "On track", "Slightly behind schedule", "Facing potential bottlenecks").
-                2.  Use 2-3 bullet points to highlight the most critical insights. Focus on potential risks, bottlenecks (like overloaded personnel or specific delays), or positive progress that should be maintained.
-                3.  Conclude with a single, actionable recommendation for the team's immediate focus.
-                4.  The entire response must be in formal, clear Thai.
-            `;
-
-            const result = await this.callGemini(prompt, e.currentTarget);
-            this.dom.aiAnalysisResultEl.innerHTML = `<div class="whitespace-pre-wrap text-sm">${this.escapeHTML(result)}</div>`;
-
-        } catch (error) {
-            if (error.message !== 'API_KEY_MISSING') {
-                this.dom.aiAnalysisResultEl.innerHTML = `<p class="text-red-500">An error occurred during analysis. Please try again.</p>`;
-            }
-            console.error("Project analysis failed:", error.message);
-        } finally {
-            this.toggleProjectAnalyzeButtonLoading(false);
-        }
-    },
-    
-    toggleProjectAnalyzeButtonLoading(isLoading) {
-        this.dom.analyzeProjectBtn.disabled = isLoading;
-        this.dom.analyzeProjectBtnSpinner.classList.toggle('hidden', !isLoading);
-        this.dom.analyzeProjectBtnIcon.classList.toggle('hidden', isLoading);
-        this.dom.analyzeProjectBtnText.textContent = isLoading ? 'กำลังวิเคราะห์...' : 'วิเคราะห์ภาพรวมโดย AI';
-    },
-
 };
 
 // --- APP INITIALIZATION ---

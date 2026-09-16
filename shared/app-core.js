@@ -65,51 +65,6 @@ const STORAGE_ENGINE = (() => {
 })();
 
 /**
- * CRYPTO_VAULT — encrypts the Gemini API key with AES-GCM 256.
- * Ref: SKILL references/js-quality.md → AES-GCM API Key Vault
- * Uses a NON-EXTRACTABLE CryptoKey stored in IndexedDB, so the raw key
- * bytes can never be read back out — only used to encrypt/decrypt in-origin.
- * No passphrase required → no change to the existing UX.
- *
- * This vault, and anything stored through it, must NEVER be pushed to
- * Firestore by the sync engine below — it is strictly local-only.
- */
-const CRYPTO_VAULT = (() => {
-    'use strict';
-    const ALGO = 'AES-GCM';
-    const KEY_RECORD = 'cryptoKey';
-    const SECRET_RECORD = 'apiKeySecret';
-
-    async function _getKey() {
-        let key = await STORAGE_ENGINE.get(KEY_RECORD);
-        if (!key) {
-            key = await crypto.subtle.generateKey({ name: ALGO, length: 256 }, false, ['encrypt', 'decrypt']);
-            await STORAGE_ENGINE.put(KEY_RECORD, key);
-        }
-        return key;
-    }
-
-    return {
-        async setApiKey(plaintext) {
-            const key = await _getKey();
-            const iv = crypto.getRandomValues(new Uint8Array(12));
-            const data = await crypto.subtle.encrypt({ name: ALGO, iv }, key, new TextEncoder().encode(plaintext));
-            await STORAGE_ENGINE.put(SECRET_RECORD, { iv, data });
-        },
-        async getApiKey() {
-            const rec = await STORAGE_ENGINE.get(SECRET_RECORD);
-            if (!rec) return null;
-            const key = await _getKey();
-            const decrypted = await crypto.subtle.decrypt({ name: ALGO, iv: rec.iv }, key, rec.data);
-            return new TextDecoder().decode(decrypted);
-        },
-        async clearApiKey() {
-            await STORAGE_ENGINE.delete(SECRET_RECORD);
-        },
-    };
-})();
-
-/**
  * Admin PIN — a single shared PIN unlocks "edit mode" (see App.isEditingAllowed,
  * App.handlePinSubmit). This is a "quick", UI-only gate, not real access
  * control: this is a static site with no backend, so ADMIN_PIN_HASH_HEX is

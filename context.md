@@ -59,9 +59,6 @@ computes it from `subtasks[].checked` at render time.
   key/value wrapper. This is the single local source of truth; each build
   uses its own DB name (`APP_DB_NAME`, set inline before the shared
   script tag) so desktop and mobile never share local storage.
-- **`CRYPTO_VAULT`** (`shared/app-core.js`) — encrypts the user's Gemini
-  API key with AES-GCM before storing it in IndexedDB. **This, and the
-  API key itself, must never be sent to Firestore.**
 - **`SYNC_ENGINE`** (`shared/app-core.js`) — bridges local `App.tasks`
   with a shared Firestore project for real-time multi-device sync:
   - Outbound: `App.saveTasks()` calls `SYNC_ENGINE.prepareSync()` (diffs
@@ -97,11 +94,17 @@ concurrent edits to other subtasks of the same task.
 
 By default, anyone who opens the app's link is in **view-only mode**: they
 see the live checklist and real-time updates, but every mutating control
-(check/uncheck, add/edit/delete task, import, reset, clear-all-checks) is
-hidden or disabled. Entering a shared PIN (`App.handlePinSubmit`, checked
-against `ADMIN_PIN_HASH_HEX` in `shared/app-core.js` via `verifyPin()`)
-unlocks "edit mode" (`settings.adminUnlocked`) on that device, persisted
-across reloads until explicitly locked again. Every mutating handler also
+(add/edit/delete task, import, reset, clear-all-checks) is hidden or
+disabled. **Checking/unchecking a subtask is the one deliberate exception**
+— `handleSubtaskChange` does not call `isEditingAllowed()` and the
+checkbox is never rendered `disabled`, so ticking off items works
+regardless of lock state (added after real usage showed requiring a PIN
+unlock just to check a box was too disruptive mid-shift; matches the same
+change made in the sibling Check-list-SD app). Entering a shared PIN
+(`App.handlePinSubmit`, checked against `ADMIN_PIN_HASH_HEX` in
+`shared/app-core.js` via `verifyPin()`) unlocks "edit mode"
+(`settings.adminUnlocked`) on that device, persisted across reloads until
+explicitly locked again. Every other mutating handler also
 has its own `isEditingAllowed()` guard as defense-in-depth, independent of
 whether its UI control was correctly hidden.
 
@@ -118,6 +121,28 @@ determined bad actor.
 Static hosting via GitHub Pages (`.nojekyll` present so Pages serves the
 PWA files as-is). Firebase/Firestore calls are pure client-SDK calls over
 HTTPS — no server process is needed or introduced.
+
+## AI removed (2569-09-16)
+
+This app used to call the Gemini API for four features: generating the
+Shift Handover Report and Post Start-Up Report (`handleGenerateHandover`/
+`handleGenerateReport`), analyzing a free-text note (`handleAnalyzeNote`),
+and an overall project-status analysis in the Dashboard
+(`handleAnalyzeProject`). The user asked to drop the Gemini dependency
+entirely (cost/quota risk of an API key). Result:
+- The two report functions were rewritten as plain string templates
+  (`buildHandoverReport`/`buildShutdownReport`) built from the exact same
+  underlying data (completed/pending tasks, issues, duration) — output
+  format is preserved, it's just no longer AI-authored prose.
+- The other two (`handleAnalyzeNote`, `handleAnalyzeProject`) were removed
+  outright, not templated — they were genuine AI judgment calls on
+  unstructured input/metrics with no deterministic equivalent.
+- `CRYPTO_VAULT`, `callGemini()`, the "Gemini API Key" modal, and all
+  related UI/state were deleted from `shared/app-core.js` and both HTML
+  files. CSP `connect-src` no longer allowlists
+  `generativelanguage.googleapis.com` in either file.
+- **Do not re-add a Gemini/AI dependency without asking the user first**,
+  even as a convenient way to implement a future feature.
 
 ## Known trade-offs
 
