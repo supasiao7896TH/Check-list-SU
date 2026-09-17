@@ -1,9 +1,10 @@
 /* Service Worker — Check list SU (mobile PWA) */
-const CACHE = 'su-checklist-v5';
+const CACHE = 'su-checklist-v6';
 const SHELL = [
   './',
   './interactive_checklist_su_mobile.html',
   './shared/app-core.js',
+  './shared/default-tasks.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',

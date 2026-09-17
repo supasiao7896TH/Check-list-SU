@@ -21,6 +21,7 @@ index.html                              Landing page; links to both builds, regi
 interactive_checklist_su_app.html       Desktop/PC build (self-contained: markup + inline <script type="module">)
 interactive_checklist_su_mobile.html    Mobile/PWA build (same App logic, mobile-tuned UI/CSS)
 shared/app-core.js                      Code shared by both builds — see below
+shared/default-tasks.js                 INITIAL_TASKS_JSON default checklist data, shared by both builds
 sw.js                                   Service worker (cache-first/network-first offline asset caching)
 manifest.webmanifest                    PWA manifest
 firestore.rules, firebase.json          Firestore security rules (deploy via Firebase CLI or paste into console)
